@@ -1,0 +1,79 @@
+//! `uu test` — detect project type and run the test suite.
+
+use anyhow::Result;
+use uu_detect::{NodePM, ProjectKind};
+
+use crate::runner::{self, step, Step};
+
+/// Generate test steps for a detected project.
+fn steps(kind: &ProjectKind) -> Vec<Step> {
+    match kind {
+        ProjectKind::Cargo => vec![step("cargo", &["test"])],
+        ProjectKind::Go => vec![step("go", &["test", "./..."])],
+        ProjectKind::Elixir => vec![step("mix", &["test"])],
+        ProjectKind::Python { uv: true } => vec![step("uv", &["run", "pytest"])],
+        ProjectKind::Python { uv: false } => vec![step("pytest", &[])],
+        ProjectKind::Node { manager } => {
+            let cmd = match manager {
+                NodePM::Bun => "bun",
+                NodePM::Pnpm => "pnpm",
+                NodePM::Yarn => "yarn",
+                NodePM::Npm => "npm",
+            };
+            vec![step(cmd, &["test"])]
+        }
+        ProjectKind::Gradle { wrapper: true } => vec![step("./gradlew", &["test"])],
+        ProjectKind::Gradle { wrapper: false } => vec![step("gradle", &["test"])],
+        ProjectKind::Maven => vec![step("mvn", &["test"])],
+        ProjectKind::Ruby => vec![step("bundle", &["exec", "rake", "test"])],
+        ProjectKind::Meson => vec![step("meson", &["test", "-C", "builddir"])],
+        ProjectKind::CMake => vec![step("ctest", &["--test-dir", "build"])],
+        ProjectKind::Make => vec![step("make", &["test"])],
+    }
+}
+
+pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
+    let kind = runner::detect_project()?;
+    let mut s = steps(&kind);
+    runner::append_args(&mut s, &extra_args);
+    runner::run_steps(&kind, &s, dry_run)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cargo_test() {
+        let s = steps(&ProjectKind::Cargo);
+        assert_eq!(s[0].args, ["test"]);
+    }
+
+    #[test]
+    fn go_test_all_packages() {
+        let s = steps(&ProjectKind::Go);
+        assert_eq!(s[0].args, ["test", "./..."]);
+    }
+
+    #[test]
+    fn python_with_uv_runs_pytest() {
+        let s = steps(&ProjectKind::Python { uv: true });
+        assert_eq!(s[0].program, "uv");
+        assert_eq!(s[0].args, ["run", "pytest"]);
+    }
+
+    #[test]
+    fn cmake_uses_ctest() {
+        let s = steps(&ProjectKind::CMake);
+        assert_eq!(s[0].program, "ctest");
+    }
+
+    #[test]
+    fn node_yarn_test() {
+        let s = steps(&ProjectKind::Node {
+            manager: NodePM::Yarn,
+        });
+        assert_eq!(s[0].program, "yarn");
+        assert_eq!(s[0].args, ["test"]);
+    }
+}
