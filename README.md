@@ -81,6 +81,14 @@ $ uu build -- --release
      running cargo build --release
 ```
 
+For Node.js projects, runs your `build` script. If there's no `build` script in package.json, skips gracefully instead of failing:
+
+```
+$ uu build
+    detected Node.js (package.json)
+     skipped no "build" script in package.json — nothing to build
+```
+
 ### `uu check`
 
 Typecheck or compile without running tests. Faster feedback than `uu test`.
@@ -93,8 +101,6 @@ $ uu check
 ```
 
 For Go, compiles test files without executing (`go test -run=^$ ./...`). For Node.js, runs your `typecheck` script. Ecosystems without a meaningful typecheck (Python, Ruby) bail with a suggestion.
-
-Alias: `uu typecheck`
 
 ### `uu ci`
 
@@ -126,6 +132,16 @@ $ uu install
         done ✓
 ```
 
+For Node.js projects with a `bin` field in package.json, also links the binary onto your PATH:
+
+```
+$ uu install
+    detected Node.js (package.json)
+     running bun install
+     running bun link
+        done ✓
+```
+
 ### `uu run`
 
 Detect and run.
@@ -137,6 +153,44 @@ $ uu run
 ```
 
 For Python, auto-detects the entry point: `manage.py` (Django), `app.py` (Flask), or `main.py`.
+
+### `uu dev`
+
+Start dev servers. In a monorepo, detects workspace packages and runs their `dev` scripts concurrently with colored, prefixed output.
+
+```
+$ uu dev
+    detected Node.js workspace (pnpm, 6 packages)
+     running agent · tsc --watch
+     running api · doppler run -- tsx watch src/index.ts
+     running desktop · cargo tauri dev
+     running extension · vite build --watch
+     running shared · tsc --watch
+     running web · vite dev
+       [api] Listening on :3001
+       [web] VITE v6.4.1 ready in 200ms
+```
+
+Run specific packages only:
+
+```
+$ uu dev api web
+    detected Node.js workspace (pnpm, 2 packages)
+     running api · doppler run -- tsx watch src/index.ts
+     running web · vite dev
+```
+
+Open the first detected localhost URL in your browser with `-o`:
+
+```
+$ uu dev api web -o
+    detected Node.js workspace (pnpm, 2 packages)
+     running api · doppler run -- tsx watch src/index.ts
+     running web · vite dev
+     opening http://localhost:5173/
+```
+
+In a non-workspace project, runs the `dev` script directly (`pnpm run dev`, `npm run dev`, etc.).
 
 ### `uu test`
 
@@ -173,8 +227,6 @@ $ uu fmt
 ```
 
 For Python, uses `ruff format .` if available, falls back to `black .`.
-
-Alias: `uu format`
 
 ### `uu clean`
 
@@ -215,8 +267,6 @@ $ uu doctor
 
 If no project is detected, prints the list of supported project files.
 
-Alias: `uu info`
-
 ### `uu ports`
 
 See what's listening. Kill by port number.
@@ -248,26 +298,29 @@ $ uu install -n
 
 `uu` detects projects by looking for build system files. When multiple are present, it picks the most specific one.
 
-| Priority | File | Ecosystem | `build` | `check` | `ci` | `install` | `test` | `run` | `fmt` | `lint` |
-|:--------:|------|-----------|---------|---------|------|-----------|--------|-------|-------|--------|
-| 1 | `Cargo.toml` | Rust | `cargo build` | `cargo check` | fmt‑check + clippy + test | `cargo install --path .` | `cargo test` | `cargo run` | `cargo fmt` | `cargo clippy` |
-| 2 | `go.mod` | Go | `go build ./...` | `go test -run=^$ ./...` | gofmt check + vet + test | `go install ./...` | `go test ./...` | `go run .` | `gofmt -w .` | `go vet ./...` |
-| 3 | `mix.exs` | Elixir | `mix compile` | `mix compile --warnings-as-errors` | format‑check + compile + test | `mix deps.get` + `mix compile` | `mix test` | `mix run` | `mix format` | `mix compile --warnings-as-errors` |
-| 4 | `pyproject.toml` | Python | `python -m build` | —¹ | ruff fmt‑check + check + pytest | `pip install .` | `pytest` | `python main.py` | `ruff format .`² | `ruff check .`² |
-| 5 | `package.json` | Node.js | `npm run build`³ | `npm run typecheck`³ | lint + test³ | `npm install`³ | `npm test`³ | `npm start`³ | `npm run format`³ | `npm run lint`³ |
-| 6 | `build.gradle` | Gradle | `./gradlew build`⁴ | `./gradlew build -x test`⁴ | `./gradlew check`⁴ | `./gradlew build`⁴ | `./gradlew test`⁴ | `./gradlew run`⁴ | `./gradlew spotlessApply`⁴ | `./gradlew check`⁴ |
-| 7 | `pom.xml` | Maven | `mvn package` | `mvn -DskipTests package` | `mvn test` | `mvn install` | `mvn test` | — | — | — |
-| 8 | `Gemfile` | Ruby | `bundle exec rake build` | —¹ | `bundle exec rake test` | `bundle install` | `bundle exec rake test` | `rubocop -a` | `rubocop` | `rubocop` |
-| 9 | `meson.build` | Meson | `meson setup` + `compile` | `meson compile` | `meson test` | `meson setup` + `install` | `meson test` | — | — | — |
-| 10 | `CMakeLists.txt` | CMake | `cmake -B` + `--build` | `cmake -B` + `--build` | `ctest` | `cmake` build + install | `ctest` | — | — | — |
-| 11 | `Makefile` | Make | `make` | `make` | `make test` | `make && make install` | `make test` | `make run` | — | — |
+| Priority | File | Ecosystem | `build` | `check` | `ci` | `install` | `test` | `run` | `dev` | `fmt` | `lint` |
+|:--------:|------|-----------|---------|---------|------|-----------|--------|-------|-------|-------|--------|
+| 1 | `Cargo.toml` | Rust | `cargo build` | `cargo check` | fmt‑check + clippy + test | `cargo install --path .` | `cargo test` | `cargo run` | `cargo run`⁵ | `cargo fmt` | `cargo clippy` |
+| 2 | `go.mod` | Go | `go build ./...` | `go test -run=^$ ./...` | gofmt check + vet + test | `go install ./...` | `go test ./...` | `go run .` | `go run .`⁵ | `gofmt -w .` | `go vet ./...` |
+| 3 | `mix.exs` | Elixir | `mix compile` | `mix compile --warnings-as-errors` | format‑check + compile + test | `mix deps.get` + `mix compile` | `mix test` | `mix run` | `mix run`⁵ | `mix format` | `mix compile --warnings-as-errors` |
+| 4 | `pyproject.toml` | Python | `python -m build` | —¹ | ruff fmt‑check + check + pytest | `pip install .` | `pytest` | `python main.py` | `python main.py`⁵ | `ruff format .`² | `ruff check .`² |
+| 5 | `package.json` | Node.js | `npm run build`³ | `npm run typecheck`³ | lint + test³ | `npm install`³⁷ | `npm test`³ | `npm start`³ | `npm run dev`³⁶ | `npm run format`³ | `npm run lint`³ |
+| 6 | `build.gradle` | Gradle | `./gradlew build`⁴ | `./gradlew build -x test`⁴ | `./gradlew check`⁴ | `./gradlew build`⁴ | `./gradlew test`⁴ | `./gradlew run`⁴ | `./gradlew run`⁴⁵ | `./gradlew spotlessApply`⁴ | `./gradlew check`⁴ |
+| 7 | `pom.xml` | Maven | `mvn package` | `mvn -DskipTests package` | `mvn test` | `mvn install` | `mvn test` | — | — | — | — |
+| 8 | `Gemfile` | Ruby | `bundle exec rake build` | —¹ | `bundle exec rake test` | `bundle install` | `bundle exec rake test` | `rubocop -a` | `rubocop -a`⁵ | `rubocop` | `rubocop` |
+| 9 | `meson.build` | Meson | `meson setup` + `compile` | `meson compile` | `meson test` | `meson setup` + `install` | `meson test` | — | — | — | — |
+| 10 | `CMakeLists.txt` | CMake | `cmake -B` + `--build` | `cmake -B` + `--build` | `ctest` | `cmake` build + install | `ctest` | — | — | — | — |
+| 11 | `Makefile` | Make | `make` | `make` | `make test` | `make && make install` | `make test` | `make run` | `make run`⁵ | — | — |
 
 ¹ No built-in typecheck — `uu check` bails with suggestions (mypy/pyright for Python, Sorbet for Ruby).
 ² Falls back to `black`/`flake8` if ruff is not installed. Bails with install instructions if neither is found.
 ³ Detects your package manager from lockfile: npm, yarn, pnpm, or bun.
 ⁴ Uses `./gradlew` wrapper if present, falls back to `gradle`.
+⁵ Falls back to same command as `run` (no dev/prod distinction in this ecosystem).
+⁶ Workspace-aware: in monorepos, `uu dev` runs all packages' `dev` scripts concurrently. Use `uu dev pkg1 pkg2` to select specific packages. Add `-o` to open the first localhost URL in your browser.
+⁷ If package.json has a `bin` field, also runs `<pm> link` to make the CLI available on PATH.
 
-Python auto-detects `uv` on your PATH and uses `uv pip install .` / `uv run pytest` when available. Falls back to `python3`/`pip3` if `python`/`pip` are not found.
+Python auto-detects `uv` on your PATH and uses `uv pip install .` / `uv run pytest` when available.
 
 ## Project Structure
 
@@ -292,7 +345,7 @@ To add support for a new ecosystem:
 
 ## Stack
 
-Rust · tokio · clap · sysinfo
+Rust · clap
 
 ## License
 
