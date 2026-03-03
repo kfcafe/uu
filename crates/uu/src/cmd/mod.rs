@@ -1,5 +1,12 @@
+pub(crate) mod build;
+pub(crate) mod check;
+pub(crate) mod ci;
 pub(crate) mod clean;
+pub(crate) mod dev;
+pub(crate) mod doctor;
+pub(crate) mod fmt;
 pub(crate) mod install;
+pub(crate) mod lint;
 pub(crate) mod ports;
 pub(crate) mod run;
 pub(crate) mod test_cmd;

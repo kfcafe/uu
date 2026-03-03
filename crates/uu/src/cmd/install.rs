@@ -44,6 +44,21 @@ pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
     let kind = runner::detect_project()?;
     let mut s = steps(&kind);
     runner::append_args(&mut s, &extra_args);
+
+    // Node projects with a "bin" field should also link the binary onto PATH.
+    if let ProjectKind::Node { manager } = &kind {
+        let dir = std::env::current_dir()?;
+        if uu_detect::node_has_bin(&dir) {
+            let cmd = match manager {
+                NodePM::Bun => "bun",
+                NodePM::Pnpm => "pnpm",
+                NodePM::Yarn => "yarn",
+                NodePM::Npm => "npm",
+            };
+            s.push(step(cmd, &["link"]));
+        }
+    }
+
     runner::run_steps(&kind, &s, dry_run)
 }
 
