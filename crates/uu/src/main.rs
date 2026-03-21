@@ -1,8 +1,10 @@
 mod cmd;
 mod runner;
 
+use std::path::PathBuf;
 use std::process;
 
+use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
 
 /// Universal utilities — zero-config developer tools that detect your project
@@ -46,6 +48,9 @@ enum Commands {
     /// Run the linter
     Lint(ProjectArgs),
 
+    /// Generate a project manifest (types, functions, routes, models)
+    Map(cmd::map::MapArgs),
+
     /// List or kill processes by port
     Ports(PortsArgs),
 
@@ -59,6 +64,10 @@ enum Commands {
 /// Arguments shared by project-aware commands (install, run, test).
 #[derive(Args)]
 struct ProjectArgs {
+    /// Run in a different directory
+    #[arg(short = 'C', long = "dir")]
+    directory: Option<PathBuf>,
+
     /// Show what would run without executing
     #[arg(short = 'n', long)]
     dry_run: bool,
@@ -70,6 +79,10 @@ struct ProjectArgs {
 
 #[derive(Args)]
 struct DevArgs {
+    /// Run in a different directory
+    #[arg(short = 'C', long = "dir")]
+    directory: Option<PathBuf>,
+
     /// Show what would run without executing
     #[arg(short = 'n', long)]
     dry_run: bool,
@@ -84,9 +97,22 @@ struct DevArgs {
 
 #[derive(Args)]
 struct CleanArgs {
+    /// Run in a different directory
+    #[arg(short = 'C', long = "dir")]
+    directory: Option<PathBuf>,
+
     /// Show what would be removed without deleting
     #[arg(short = 'n', long)]
     dry_run: bool,
+}
+
+/// Change to the given directory if provided.
+fn chdir(dir: &Option<PathBuf>) -> Result<()> {
+    if let Some(d) = dir {
+        std::env::set_current_dir(d)
+            .with_context(|| format!("cannot change to directory `{}`", d.display()))?;
+    }
+    Ok(())
 }
 
 #[derive(Args)]
@@ -103,18 +129,30 @@ fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Commands::Build(a) => cmd::build::execute(a.dry_run, a.args),
-        Commands::Check(a) => cmd::check::execute(a.dry_run, a.args),
-        Commands::Ci(a) => cmd::ci::execute(a.dry_run, a.args),
-        Commands::Clean(a) => cmd::clean::execute(a.dry_run),
-        Commands::Dev(a) => cmd::dev::execute(a.dry_run, a.open, a.packages, vec![]),
+        Commands::Build(a) => {
+            chdir(&a.directory).and_then(|()| cmd::build::execute(a.dry_run, a.args))
+        }
+        Commands::Check(a) => {
+            chdir(&a.directory).and_then(|()| cmd::check::execute(a.dry_run, a.args))
+        }
+        Commands::Ci(a) => chdir(&a.directory).and_then(|()| cmd::ci::execute(a.dry_run, a.args)),
+        Commands::Clean(a) => chdir(&a.directory).and_then(|()| cmd::clean::execute(a.dry_run)),
+        Commands::Dev(a) => chdir(&a.directory)
+            .and_then(|()| cmd::dev::execute(a.dry_run, a.open, a.packages, vec![])),
         Commands::Doctor => cmd::doctor::execute(),
-        Commands::Fmt(a) => cmd::fmt::execute(a.dry_run, a.args),
-        Commands::Install(a) => cmd::install::execute(a.dry_run, a.args),
-        Commands::Lint(a) => cmd::lint::execute(a.dry_run, a.args),
+        Commands::Fmt(a) => chdir(&a.directory).and_then(|()| cmd::fmt::execute(a.dry_run, a.args)),
+        Commands::Install(a) => {
+            chdir(&a.directory).and_then(|()| cmd::install::execute(a.dry_run, a.args))
+        }
+        Commands::Lint(a) => {
+            chdir(&a.directory).and_then(|()| cmd::lint::execute(a.dry_run, a.args))
+        }
+        Commands::Map(a) => cmd::map::execute(a),
         Commands::Ports(a) => cmd::ports::execute(a.port, a.kill),
-        Commands::Run(a) => cmd::run::execute(a.dry_run, a.args),
-        Commands::Test(a) => cmd::test_cmd::execute(a.dry_run, a.args),
+        Commands::Run(a) => chdir(&a.directory).and_then(|()| cmd::run::execute(a.dry_run, a.args)),
+        Commands::Test(a) => {
+            chdir(&a.directory).and_then(|()| cmd::test_cmd::execute(a.dry_run, a.args))
+        }
     };
 
     if let Err(err) = result {

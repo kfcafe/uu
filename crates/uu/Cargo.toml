@@ -11,11 +11,15 @@ path = "src/main.rs"
 
 [dependencies]
 uu-detect = { path = "../detect" }
+uu-manifest = { path = "../manifest" }
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
 ctrlc = { version = "3", features = ["termination"] }
+serde_yaml = "0.9"
+serde_json = "1"
 
 [dev-dependencies]
 assert_cmd = "2"
 predicates = "3"
+serde_json = "1"
 tempfile = "3"

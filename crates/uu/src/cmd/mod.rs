@@ -7,6 +7,7 @@ pub(crate) mod doctor;
 pub(crate) mod fmt;
 pub(crate) mod install;
 pub(crate) mod lint;
+pub(crate) mod map;
 pub(crate) mod ports;
 pub(crate) mod run;
 pub(crate) mod test_cmd;

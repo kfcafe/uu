@@ -1,0 +1,1164 @@
+project:
+  name: uu
+  kind: Rust
+  generated_at: 2026-03-21T08:22:01Z
+  uu_version: 0.1.0
+types:
+  Adapter:
+    source: crates/manifest/src/adapters/mod.rs:25
+    kind: Trait
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+  AdapterLayer:
+    source: crates/manifest/src/adapters/mod.rs:13
+    kind: Enum
+    variants:
+    - Language
+    - Framework
+  AspNetAdapter:
+    source: crates/manifest/src/adapters/framework/aspnet.rs:11
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  AuthConfig:
+    source: crates/manifest/src/schema.rs:271
+    fields:
+    - name: providers
+      type_name: Vec<String>
+    - name: strategy
+      type_name: String
+  AuthJsAdapter:
+    source: crates/manifest/src/adapters/framework/authjs.rs:9
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  AxumAdapter:
+    source: crates/manifest/src/adapters/framework/axum.rs:12
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  CCppAdapter:
+    source: crates/manifest/src/adapters/lang/c_cpp.rs:23
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  CSharpAdapter:
+    source: crates/manifest/src/adapters/lang/csharp.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  CommonArgs:
+    source: crates/uu/src/cmd/map/mod.rs:84
+    fields:
+    - name: path
+      type_name: Option<PathBuf>
+      optional: true
+    - name: all
+      type_name: bool
+    visibility: Internal
+  Component:
+    source: crates/manifest/src/schema.rs:249
+    fields:
+    - name: name
+      type_name: String
+    - name: file
+      type_name: String
+    - name: props
+      type_name: Vec<Field>
+  DataModel:
+    source: crates/manifest/src/schema.rs:158
+    fields:
+    - name: name
+      type_name: String
+    - name: source
+      type_name: String
+    - name: orm
+      type_name: String
+    - name: fields
+      type_name: Vec<Field>
+    - name: relations
+      type_name: Vec<Relation>
+    - name: indexes
+      type_name: Vec<String>
+  DjangoAdapter:
+    source: crates/manifest/src/adapters/framework/django.rs:14
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  EctoAdapter:
+    source: crates/manifest/src/adapters/framework/ecto.rs:9
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  ElixirAdapter:
+    source: crates/manifest/src/adapters/lang/elixir.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  Endpoint:
+    source: crates/manifest/src/schema.rs:232
+    fields:
+    - name: path
+      type_name: String
+    - name: file
+      type_name: String
+    - name: method
+      type_name: String
+    - name: handler
+      type_name: String
+    - name: middleware
+      type_name: Vec<String>
+  ExpressAdapter:
+    source: crates/manifest/src/adapters/framework/express.rs:12
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  FastApiAdapter:
+    source: crates/manifest/src/adapters/framework/fastapi.rs:14
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  Field:
+    source: crates/manifest/src/schema.rs:175
+    fields:
+    - name: name
+      type_name: String
+    - name: type_name
+      type_name: String
+    - name: optional
+      type_name: bool
+  Function:
+    source: crates/manifest/src/schema.rs:124
+    fields:
+    - name: name
+      type_name: String
+    - name: source
+      type_name: String
+    - name: signature
+      type_name: String
+    - name: visibility
+      type_name: Visibility
+    - name: is_async
+      type_name: bool
+    - name: is_test
+      type_name: bool
+  GenerateArgs:
+    source: crates/uu/src/cmd/map/generate.rs:12
+    fields:
+    - name: path
+      type_name: Option<PathBuf>
+      optional: true
+    - name: output
+      type_name: Option<PathBuf>
+      optional: true
+    - name: format
+      type_name: String
+    - name: stdout
+      type_name: bool
+    - name: detect_only
+      type_name: bool
+    - name: diff
+      type_name: bool
+    - name: adapters
+      type_name: Option<String>
+      optional: true
+    - name: dry_run
+      type_name: bool
+    - name: all
+      type_name: bool
+    visibility: Internal
+  GinAdapter:
+    source: crates/manifest/src/adapters/framework/gin.rs:12
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  GoAdapter:
+    source: crates/manifest/src/adapters/lang/go.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  GormAdapter:
+    source: crates/manifest/src/adapters/framework/gorm.rs:12
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  Integration:
+    source: crates/manifest/src/schema.rs:260
+    fields:
+    - name: name
+      type_name: String
+    - name: kind
+      type_name: String
+    - name: config_file
+      type_name: Option<String>
+      optional: true
+  JavaAdapter:
+    source: crates/manifest/src/adapters/lang/java.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  JavaScriptAdapter:
+    source: crates/manifest/src/adapters/lang/javascript.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  Manifest:
+    source: crates/manifest/src/schema.rs:18
+    fields:
+    - name: project
+      type_name: ProjectMeta
+    - name: types
+      type_name: BTreeMap<String, TypeDef>
+    - name: functions
+      type_name: BTreeMap<String, Function>
+    - name: modules
+      type_name: BTreeMap<String, Module>
+    - name: routes
+      type_name: BTreeMap<String, Route>
+    - name: endpoints
+      type_name: BTreeMap<String, Endpoint>
+    - name: models
+      type_name: BTreeMap<String, DataModel>
+    - name: auth
+      type_name: Option<AuthConfig>
+      optional: true
+    - name: components
+      type_name: Vec<Component>
+    - name: integrations
+      type_name: Vec<Integration>
+  ManifestDiff:
+    source: crates/manifest/src/diff.rs:10
+    fields:
+    - name: types
+      type_name: SectionDiff<TypeDef>
+    - name: functions
+      type_name: SectionDiff<Function>
+    - name: modules
+      type_name: SectionDiff<Module>
+    - name: routes
+      type_name: SectionDiff<Route>
+    - name: endpoints
+      type_name: SectionDiff<Endpoint>
+    - name: models
+      type_name: SectionDiff<DataModel>
+    - name: auth_changed
+      type_name: bool
+    - name: components_added
+      type_name: Vec<Component>
+    - name: components_removed
+      type_name: Vec<Component>
+    - name: integrations_added
+      type_name: Vec<Integration>
+    - name: integrations_removed
+      type_name: Vec<Integration>
+    methods:
+    - is_empty
+    - fmt
+    implements:
+    - fmt::Display
+  ManifestFragment:
+    source: crates/manifest/src/schema.rs:56
+    fields:
+    - name: types
+      type_name: BTreeMap<String, TypeDef>
+    - name: functions
+      type_name: BTreeMap<String, Function>
+    - name: modules
+      type_name: BTreeMap<String, Module>
+    - name: routes
+      type_name: BTreeMap<String, Route>
+    - name: endpoints
+      type_name: BTreeMap<String, Endpoint>
+    - name: models
+      type_name: BTreeMap<String, DataModel>
+    - name: auth
+      type_name: Option<AuthConfig>
+      optional: true
+    - name: components
+      type_name: Vec<Component>
+    - name: integrations
+      type_name: Vec<Integration>
+  MapArgs:
+    source: crates/uu/src/cmd/map/mod.rs:28
+    fields:
+    - name: command
+      type_name: Option<MapCommand>
+      optional: true
+    - name: path
+      type_name: Option<PathBuf>
+      optional: true
+    - name: output
+      type_name: Option<PathBuf>
+      optional: true
+    - name: format
+      type_name: String
+    - name: stdout
+      type_name: bool
+    - name: detect_only
+      type_name: bool
+    - name: diff
+      type_name: bool
+    - name: adapters
+      type_name: Option<String>
+      optional: true
+    - name: dry_run
+      type_name: bool
+    - name: all
+      type_name: bool
+    visibility: Internal
+  Module:
+    source: crates/manifest/src/schema.rs:143
+    fields:
+    - name: path
+      type_name: String
+    - name: file
+      type_name: String
+    - name: exports
+      type_name: Vec<String>
+    - name: imports
+      type_name: Vec<String>
+  NextJsAdapter:
+    source: crates/manifest/src/adapters/framework/nextjs.rs:11
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  NodePM:
+    source: crates/detect/src/lib.rs:13
+    kind: Enum
+    variants:
+    - Bun
+    - Pnpm
+    - Yarn
+    - Npm
+  PhoenixAdapter:
+    source: crates/manifest/src/adapters/framework/phoenix.rs:9
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  PrismaAdapter:
+    source: crates/manifest/src/adapters/framework/prisma.rs:11
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  ProjectContext:
+    source: crates/manifest/src/context.rs:10
+    fields:
+    - name: root
+      type_name: PathBuf
+    - name: kind
+      type_name: ProjectKind
+    - name: files
+      type_name: Vec<PathBuf>
+    - name: package_json
+      type_name: Option<serde_json::Value>
+      optional: true
+    - name: cargo_toml
+      type_name: Option<toml::Value>
+      optional: true
+    - name: go_mod
+      type_name: Option<String>
+      optional: true
+    methods:
+    - build
+  ProjectKind:
+    source: crates/detect/src/lib.rs:22
+    kind: Enum
+    variants:
+    - Cargo
+    - Go
+    - Elixir
+    - Python
+    - Node
+    - Gradle
+    - Maven
+    - Ruby
+    - Swift
+    - DotNet
+    - Meson
+    - CMake
+    - Make
+    methods:
+    - label
+    - detected_file
+    - artifact_dirs
+  ProjectMeta:
+    source: crates/manifest/src/schema.rs:42
+    fields:
+    - name: name
+      type_name: String
+    - name: kind
+      type_name: String
+    - name: frameworks
+      type_name: Vec<String>
+    - name: generated_at
+      type_name: String
+    - name: uu_version
+      type_name: String
+  PythonAdapter:
+    source: crates/manifest/src/adapters/lang/python.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  QueryArgs:
+    source: crates/uu/src/cmd/map/query.rs:13
+    fields:
+    - name: name
+      type_name: String
+    - name: path
+      type_name: Option<PathBuf>
+      optional: true
+    - name: all
+      type_name: bool
+    - name: refs
+      type_name: bool
+    visibility: Internal
+  RailsAdapter:
+    source: crates/manifest/src/adapters/framework/rails.rs:11
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  Relation:
+    source: crates/manifest/src/schema.rs:185
+    fields:
+    - name: name
+      type_name: String
+    - name: kind
+      type_name: RelationKind
+    - name: target
+      type_name: String
+  RelationKind:
+    source: crates/manifest/src/schema.rs:194
+    kind: Enum
+    variants:
+    - HasOne
+    - HasMany
+    - BelongsTo
+    - ManyToMany
+  Route:
+    source: crates/manifest/src/schema.rs:206
+    fields:
+    - name: path
+      type_name: String
+    - name: file
+      type_name: String
+    - name: route_type
+      type_name: RouteType
+    - name: methods
+      type_name: Vec<String>
+    - name: handler
+      type_name: Option<String>
+      optional: true
+  RouteType:
+    source: crates/manifest/src/schema.rs:221
+    kind: Enum
+    variants:
+    - Page
+    - Layout
+    - ApiRoute
+    - Controller
+    - Middleware
+  RubyAdapter:
+    source: crates/manifest/src/adapters/lang/ruby.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  RustAdapter:
+    source: crates/manifest/src/adapters/lang/rust.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  SearchArgs:
+    source: crates/uu/src/cmd/map/search.rs:12
+    fields:
+    - name: term
+      type_name: String
+    - name: path
+      type_name: Option<PathBuf>
+      optional: true
+    - name: all
+      type_name: bool
+    - name: category
+      type_name: Option<String>
+      optional: true
+    visibility: Internal
+  SectionDiff:
+    source: crates/manifest/src/diff.rs:26
+    fields:
+    - name: added
+      type_name: BTreeMap<String, T>
+    - name: removed
+      type_name: BTreeMap<String, T>
+    - name: changed
+      type_name: BTreeMap<String, (T, T)>
+  ShadcnAdapter:
+    source: crates/manifest/src/adapters/framework/shadcn.rs:11
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  SpringAdapter:
+    source: crates/manifest/src/adapters/framework/spring.rs:11
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  Step:
+    source: crates/uu/src/runner.rs:11
+    fields:
+    - name: program
+      type_name: String
+    - name: args
+      type_name: Vec<String>
+    methods:
+    - fmt
+    visibility: Internal
+    implements:
+    - fmt::Display
+  SwiftAdapter:
+    source: crates/manifest/src/adapters/lang/swift.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  TypeDef:
+    source: crates/manifest/src/schema.rs:81
+    fields:
+    - name: name
+      type_name: String
+    - name: source
+      type_name: String
+    - name: kind
+      type_name: TypeKind
+    - name: fields
+      type_name: Vec<Field>
+    - name: variants
+      type_name: Vec<String>
+    - name: methods
+      type_name: Vec<String>
+    - name: visibility
+      type_name: Visibility
+    - name: implements
+      type_name: Vec<String>
+  TypeKind:
+    source: crates/manifest/src/schema.rs:102
+    kind: Enum
+    variants:
+    - Struct
+    - Class
+    - Interface
+    - Enum
+    - Trait
+    - Protocol
+    - Union
+    - TypeAlias
+    methods:
+    - is_default
+  TypeScriptAdapter:
+    source: crates/manifest/src/adapters/lang/typescript.rs:13
+    methods:
+    - name
+    - detect
+    - extract
+    - priority
+    - layer
+    implements:
+    - Adapter
+  Visibility:
+    source: crates/manifest/src/schema.rs:282
+    kind: Enum
+    variants:
+    - Public
+    - Private
+    - Internal
+    methods:
+    - is_public
+  WorkspacePackage:
+    source: crates/detect/src/lib.rs:321
+    fields:
+    - name: name
+      type_name: String
+    - name: path
+      type_name: PathBuf
+    - name: dev_script
+      type_name: String
+functions:
+  ManifestDiff::is_empty:
+    source: crates/manifest/src/diff.rs:44
+    signature: fn is_empty(&self) -> bool
+  ProjectContext::build:
+    source: crates/manifest/src/context.rs:22
+    signature: 'fn build(root: &Path, kind: &ProjectKind) -> Result<Self>'
+  ProjectKind::artifact_dirs:
+    source: crates/detect/src/lib.rs:79
+    signature: fn artifact_dirs(&self) -> &'static [&'static str]
+  ProjectKind::detected_file:
+    source: crates/detect/src/lib.rs:59
+    signature: fn detected_file(&self) -> &'static str
+  ProjectKind::label:
+    source: crates/detect/src/lib.rs:40
+    signature: fn label(&self) -> &'static str
+  SectionDiff<T>::is_empty:
+    source: crates/manifest/src/diff.rs:61
+    signature: fn is_empty(&self) -> bool
+  TypeKind::is_default:
+    source: crates/manifest/src/schema.rs:115
+    signature: fn is_default(&self) -> bool
+  Visibility::is_public:
+    source: crates/manifest/src/schema.rs:290
+    signature: fn is_public(&self) -> bool
+  all_adapters:
+    source: crates/manifest/src/adapters/mod.rs:44
+    signature: fn all_adapters() -> Vec<Box<dyn Adapter>>
+  append_args:
+    source: crates/uu/src/runner.rs:51
+    signature: 'fn append_args(steps: &mut [Step], extra_args: &[String])'
+    visibility: Internal
+  bold:
+    source: crates/uu/src/cmd/map/format.rs:9
+    signature: 'fn bold(text: &str) -> String'
+    visibility: Internal
+  command_on_path:
+    source: crates/detect/src/lib.rs:187
+    signature: 'fn command_on_path(name: &str) -> bool'
+  cyan:
+    source: crates/uu/src/cmd/map/format.rs:17
+    signature: 'fn cyan(text: &str) -> String'
+    visibility: Internal
+  detect:
+    source: crates/detect/src/lib.rs:106
+    signature: 'fn detect(dir: impl AsRef<Path>) -> Option<ProjectKind>'
+  detect_node_workspace:
+    source: crates/detect/src/lib.rs:336
+    signature: 'fn detect_node_workspace(dir: &Path) -> Option<Vec<WorkspacePackage>>'
+  detect_project:
+    source: crates/uu/src/runner.rs:39
+    signature: fn detect_project() -> Result<ProjectKind>
+    visibility: Internal
+  diff:
+    source: crates/manifest/src/diff.rs:67
+    signature: 'fn diff(old: &Manifest, new: &Manifest) -> ManifestDiff'
+  dim:
+    source: crates/uu/src/cmd/map/format.rs:13
+    signature: 'fn dim(text: &str) -> String'
+    visibility: Internal
+  execute:
+    source: crates/uu/src/cmd/test_cmd.rs:37
+    signature: 'fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()>'
+    visibility: Internal
+  filter_public:
+    source: crates/manifest/src/lib.rs:138
+    signature: 'fn filter_public(manifest: &mut Manifest)'
+  find_references:
+    source: crates/uu/src/cmd/map/format.rs:224
+    signature: 'fn find_references(name: &str, manifest: &Manifest) -> Vec<String>'
+    visibility: Internal
+  find_similar:
+    source: crates/uu/src/cmd/map/format.rs:281
+    signature: 'fn find_similar(query: &str, manifest: &Manifest) -> Vec<String>'
+    visibility: Internal
+  generate:
+    source: crates/manifest/src/lib.rs:26
+    signature: 'fn generate(root: &Path) -> Result<Manifest>'
+  green:
+    source: crates/uu/src/cmd/map/format.rs:21
+    signature: 'fn green(text: &str) -> String'
+    visibility: Internal
+  magenta:
+    source: crates/uu/src/cmd/map/format.rs:29
+    signature: 'fn magenta(text: &str) -> String'
+    visibility: Internal
+  merge:
+    source: crates/manifest/src/lib.rs:119
+    signature: 'fn merge(fragments: Vec<ManifestFragment>) -> Manifest'
+  node_has_bin:
+    source: crates/detect/src/lib.rs:246
+    signature: 'fn node_has_bin(dir: &Path) -> bool'
+  node_has_script:
+    source: crates/detect/src/lib.rs:231
+    signature: 'fn node_has_script(dir: &Path, name: &str) -> bool'
+  print_function:
+    source: crates/uu/src/cmd/map/format.rs:101
+    signature: 'fn print_function(key: &str, f: &Function)'
+    visibility: Internal
+  print_model:
+    source: crates/uu/src/cmd/map/format.rs:178
+    signature: 'fn print_model(key: &str, m: &DataModel)'
+    visibility: Internal
+  print_module:
+    source: crates/uu/src/cmd/map/format.rs:156
+    signature: 'fn print_module(key: &str, m: &Module)'
+    visibility: Internal
+  print_route:
+    source: crates/uu/src/cmd/map/format.rs:124
+    signature: 'fn print_route(key: &str, r: &Route)'
+    visibility: Internal
+  print_type:
+    source: crates/uu/src/cmd/map/format.rs:40
+    signature: 'fn print_type(key: &str, t: &TypeDef)'
+    visibility: Internal
+  red:
+    source: crates/uu/src/cmd/map/format.rs:34
+    signature: 'fn red(text: &str) -> String'
+    visibility: Internal
+  run_steps:
+    source: crates/uu/src/runner.rs:60
+    signature: 'fn run_steps(kind: &ProjectKind, steps: &[Step], dry_run: bool) -> Result<()>'
+    visibility: Internal
+  step:
+    source: crates/uu/src/runner.rs:31
+    signature: 'fn step(program: &str, args: &[&str]) -> Step'
+    visibility: Internal
+  style:
+    source: crates/uu/src/runner.rs:101
+    signature: 'fn style(color: &str, label: &str) -> String'
+    visibility: Internal
+  supported_table:
+    source: crates/detect/src/lib.rs:199
+    signature: fn supported_table() -> String
+  to_markdown:
+    source: crates/uu/src/cmd/map/format.rs:342
+    signature: 'fn to_markdown(manifest: &Manifest) -> String'
+    visibility: Internal
+  yellow:
+    source: crates/uu/src/cmd/map/format.rs:25
+    signature: 'fn yellow(text: &str) -> String'
+    visibility: Internal
+modules:
+  detect::lib:
+    path: detect::lib
+    file: crates/detect/src/lib.rs
+    exports:
+    - tests
+  manifest::adapters:
+    path: manifest::adapters
+    file: crates/manifest/src/adapters/mod.rs
+    exports:
+    - framework
+    - lang
+  manifest::adapters::framework:
+    path: manifest::adapters::framework
+    file: crates/manifest/src/adapters/framework/mod.rs
+    exports:
+    - aspnet
+    - authjs
+    - axum
+    - django
+    - ecto
+    - express
+    - fastapi
+    - gin
+    - gorm
+    - nextjs
+    - phoenix
+    - prisma
+    - rails
+    - shadcn
+    - spring
+  manifest::adapters::framework::aspnet:
+    path: manifest::adapters::framework::aspnet
+    file: crates/manifest/src/adapters/framework/aspnet.rs
+    exports:
+    - tests
+  manifest::adapters::framework::authjs:
+    path: manifest::adapters::framework::authjs
+    file: crates/manifest/src/adapters/framework/authjs.rs
+    exports:
+    - tests
+  manifest::adapters::framework::axum:
+    path: manifest::adapters::framework::axum
+    file: crates/manifest/src/adapters/framework/axum.rs
+    exports:
+    - tests
+  manifest::adapters::framework::django:
+    path: manifest::adapters::framework::django
+    file: crates/manifest/src/adapters/framework/django.rs
+    exports:
+    - tests
+  manifest::adapters::framework::ecto:
+    path: manifest::adapters::framework::ecto
+    file: crates/manifest/src/adapters/framework/ecto.rs
+    exports:
+    - tests
+  manifest::adapters::framework::express:
+    path: manifest::adapters::framework::express
+    file: crates/manifest/src/adapters/framework/express.rs
+    exports:
+    - tests
+  manifest::adapters::framework::fastapi:
+    path: manifest::adapters::framework::fastapi
+    file: crates/manifest/src/adapters/framework/fastapi.rs
+    exports:
+    - tests
+  manifest::adapters::framework::gin:
+    path: manifest::adapters::framework::gin
+    file: crates/manifest/src/adapters/framework/gin.rs
+    exports:
+    - tests
+  manifest::adapters::framework::gorm:
+    path: manifest::adapters::framework::gorm
+    file: crates/manifest/src/adapters/framework/gorm.rs
+    exports:
+    - tests
+  manifest::adapters::framework::nextjs:
+    path: manifest::adapters::framework::nextjs
+    file: crates/manifest/src/adapters/framework/nextjs.rs
+    exports:
+    - tests
+  manifest::adapters::framework::phoenix:
+    path: manifest::adapters::framework::phoenix
+    file: crates/manifest/src/adapters/framework/phoenix.rs
+    exports:
+    - tests
+  manifest::adapters::framework::prisma:
+    path: manifest::adapters::framework::prisma
+    file: crates/manifest/src/adapters/framework/prisma.rs
+    exports:
+    - tests
+  manifest::adapters::framework::rails:
+    path: manifest::adapters::framework::rails
+    file: crates/manifest/src/adapters/framework/rails.rs
+    exports:
+    - tests
+  manifest::adapters::framework::shadcn:
+    path: manifest::adapters::framework::shadcn
+    file: crates/manifest/src/adapters/framework/shadcn.rs
+    exports:
+    - tests
+  manifest::adapters::framework::spring:
+    path: manifest::adapters::framework::spring
+    file: crates/manifest/src/adapters/framework/spring.rs
+    exports:
+    - tests
+  manifest::adapters::lang:
+    path: manifest::adapters::lang
+    file: crates/manifest/src/adapters/lang/mod.rs
+    exports:
+    - c_cpp
+    - csharp
+    - elixir
+    - go
+    - java
+    - javascript
+    - python
+    - ruby
+    - rust
+    - swift
+    - typescript
+  manifest::adapters::lang::c_cpp:
+    path: manifest::adapters::lang::c_cpp
+    file: crates/manifest/src/adapters/lang/c_cpp.rs
+    exports:
+    - tests
+  manifest::adapters::lang::csharp:
+    path: manifest::adapters::lang::csharp
+    file: crates/manifest/src/adapters/lang/csharp.rs
+    exports:
+    - tests
+  manifest::adapters::lang::elixir:
+    path: manifest::adapters::lang::elixir
+    file: crates/manifest/src/adapters/lang/elixir.rs
+    exports:
+    - tests
+  manifest::adapters::lang::go:
+    path: manifest::adapters::lang::go
+    file: crates/manifest/src/adapters/lang/go.rs
+    exports:
+    - tests
+  manifest::adapters::lang::java:
+    path: manifest::adapters::lang::java
+    file: crates/manifest/src/adapters/lang/java.rs
+    exports:
+    - tests
+  manifest::adapters::lang::javascript:
+    path: manifest::adapters::lang::javascript
+    file: crates/manifest/src/adapters/lang/javascript.rs
+    exports:
+    - tests
+  manifest::adapters::lang::python:
+    path: manifest::adapters::lang::python
+    file: crates/manifest/src/adapters/lang/python.rs
+    exports:
+    - tests
+  manifest::adapters::lang::ruby:
+    path: manifest::adapters::lang::ruby
+    file: crates/manifest/src/adapters/lang/ruby.rs
+    exports:
+    - tests
+  manifest::adapters::lang::rust:
+    path: manifest::adapters::lang::rust
+    file: crates/manifest/src/adapters/lang/rust.rs
+    exports:
+    - tests
+  manifest::adapters::lang::swift:
+    path: manifest::adapters::lang::swift
+    file: crates/manifest/src/adapters/lang/swift.rs
+    exports:
+    - tests
+  manifest::adapters::lang::typescript:
+    path: manifest::adapters::lang::typescript
+    file: crates/manifest/src/adapters/lang/typescript.rs
+    exports:
+    - tests
+  manifest::context:
+    path: manifest::context
+    file: crates/manifest/src/context.rs
+  manifest::diff:
+    path: manifest::diff
+    file: crates/manifest/src/diff.rs
+  manifest::lib:
+    path: manifest::lib
+    file: crates/manifest/src/lib.rs
+    exports:
+    - adapters
+    - context
+    - diff
+    - schema
+    - tests
+  manifest::schema:
+    path: manifest::schema
+    file: crates/manifest/src/schema.rs
+  uu::cmd:
+    path: uu::cmd
+    file: crates/uu/src/cmd/mod.rs
+    exports:
+    - build
+    - check
+    - ci
+    - clean
+    - dev
+    - doctor
+    - fmt
+    - install
+    - lint
+    - map
+    - ports
+    - run
+    - test_cmd
+  uu::cmd::build:
+    path: uu::cmd::build
+    file: crates/uu/src/cmd/build.rs
+    exports:
+    - tests
+  uu::cmd::check:
+    path: uu::cmd::check
+    file: crates/uu/src/cmd/check.rs
+    exports:
+    - tests
+  uu::cmd::ci:
+    path: uu::cmd::ci
+    file: crates/uu/src/cmd/ci.rs
+    exports:
+    - tests
+  uu::cmd::clean:
+    path: uu::cmd::clean
+    file: crates/uu/src/cmd/clean.rs
+    exports:
+    - tests
+  uu::cmd::dev:
+    path: uu::cmd::dev
+    file: crates/uu/src/cmd/dev.rs
+    exports:
+    - tests
+  uu::cmd::doctor:
+    path: uu::cmd::doctor
+    file: crates/uu/src/cmd/doctor.rs
+    exports:
+    - tests
+  uu::cmd::fmt:
+    path: uu::cmd::fmt
+    file: crates/uu/src/cmd/fmt.rs
+    exports:
+    - tests
+  uu::cmd::install:
+    path: uu::cmd::install
+    file: crates/uu/src/cmd/install.rs
+    exports:
+    - tests
+  uu::cmd::lint:
+    path: uu::cmd::lint
+    file: crates/uu/src/cmd/lint.rs
+    exports:
+    - tests
+  uu::cmd::map:
+    path: uu::cmd::map
+    file: crates/uu/src/cmd/map/mod.rs
+    exports:
+    - format
+    - generate
+    - query
+    - search
+    - stats
+    - tree
+  uu::cmd::map::format:
+    path: uu::cmd::map::format
+    file: crates/uu/src/cmd/map/format.rs
+  uu::cmd::map::generate:
+    path: uu::cmd::map::generate
+    file: crates/uu/src/cmd/map/generate.rs
+  uu::cmd::map::query:
+    path: uu::cmd::map::query
+    file: crates/uu/src/cmd/map/query.rs
+  uu::cmd::map::search:
+    path: uu::cmd::map::search
+    file: crates/uu/src/cmd/map/search.rs
+  uu::cmd::map::stats:
+    path: uu::cmd::map::stats
+    file: crates/uu/src/cmd/map/stats.rs
+  uu::cmd::map::tree:
+    path: uu::cmd::map::tree
+    file: crates/uu/src/cmd/map/tree.rs
+  uu::cmd::ports:
+    path: uu::cmd::ports
+    file: crates/uu/src/cmd/ports.rs
+    exports:
+    - tests
+  uu::cmd::run:
+    path: uu::cmd::run
+    file: crates/uu/src/cmd/run.rs
+    exports:
+    - tests
+  uu::cmd::test_cmd:
+    path: uu::cmd::test_cmd
+    file: crates/uu/src/cmd/test_cmd.rs
+    exports:
+    - tests
+  uu::main:
+    path: uu::main
+    file: crates/uu/src/main.rs
+    exports:
+    - cmd
+    - runner
+  uu::runner:
+    path: uu::runner
+    file: crates/uu/src/runner.rs
+    exports:
+    - tests
+  uu::tests::cli:
+    path: uu::tests::cli
+    file: crates/uu/tests/cli.rs
