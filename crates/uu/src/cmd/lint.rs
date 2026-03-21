@@ -10,7 +10,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
     match kind {
         ProjectKind::Cargo => Ok(vec![step("cargo", &["clippy", "--", "-D", "warnings"])]),
         ProjectKind::Go => Ok(vec![step("go", &["vet", "./..."])]),
-        ProjectKind::Elixir => Ok(vec![step("mix", &["compile", "--warnings-as-errors"])]),
+        ProjectKind::Elixir { .. } => Ok(vec![step("mix", &["compile", "--warnings-as-errors"])]),
         ProjectKind::Python { uv: true, .. } => {
             if command_on_path("ruff") {
                 Ok(vec![step("uv", &["run", "ruff", "check", "."])])
@@ -55,6 +55,11 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
              try: mvn checkstyle:check"
         ),
         ProjectKind::Ruby => Ok(vec![step("bundle", &["exec", "rubocop"])]),
+        ProjectKind::Swift => bail!(
+            "Swift has no built-in linter\n\n  \
+             try: swiftlint    # brew install swiftlint"
+        ),
+        ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["format", "--verify-no-changes"])]),
         ProjectKind::Meson => bail!("Meson has no built-in linter"),
         ProjectKind::CMake => bail!(
             "CMake has no built-in linter\n\n  \
@@ -93,7 +98,7 @@ mod tests {
 
     #[test]
     fn elixir_lint() {
-        let s = steps(&ProjectKind::Elixir).unwrap();
+        let s = steps(&ProjectKind::Elixir { escript: false }).unwrap();
         assert_eq!(s[0].program, "mix");
         assert_eq!(s[0].args, ["compile", "--warnings-as-errors"]);
     }
@@ -130,6 +135,18 @@ mod tests {
         let s = steps(&ProjectKind::Ruby).unwrap();
         assert_eq!(s[0].program, "bundle");
         assert_eq!(s[0].args, ["exec", "rubocop"]);
+    }
+
+    #[test]
+    fn swift_unsupported() {
+        assert!(steps(&ProjectKind::Swift).is_err());
+    }
+
+    #[test]
+    fn dotnet_lint() {
+        let s = steps(&ProjectKind::DotNet { sln: false }).unwrap();
+        assert_eq!(s[0].program, "dotnet");
+        assert_eq!(s[0].args, ["format", "--verify-no-changes"]);
     }
 
     #[test]

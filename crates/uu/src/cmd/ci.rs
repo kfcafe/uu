@@ -21,7 +21,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             step("go", &["vet", "./..."]),
             step("go", &["test", "./..."]),
         ]),
-        ProjectKind::Elixir => Ok(vec![
+        ProjectKind::Elixir { .. } => Ok(vec![
             step("mix", &["format", "--check-formatted"]),
             step("mix", &["compile", "--warnings-as-errors"]),
             step("mix", &["test"]),
@@ -78,6 +78,12 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Gradle { wrapper: false } => Ok(vec![step("gradle", &["check"])]),
         ProjectKind::Maven => Ok(vec![step("mvn", &["test"])]),
         ProjectKind::Ruby => Ok(vec![step("bundle", &["exec", "rake", "test"])]),
+        ProjectKind::Swift => Ok(vec![step("swift", &["build"]), step("swift", &["test"])]),
+        ProjectKind::DotNet { .. } => Ok(vec![
+            step("dotnet", &["format", "--verify-no-changes"]),
+            step("dotnet", &["build"]),
+            step("dotnet", &["test"]),
+        ]),
         ProjectKind::Meson => Ok(vec![step("meson", &["test", "-C", "builddir"])]),
         ProjectKind::CMake => Ok(vec![step("ctest", &["--test-dir", "build"])]),
         ProjectKind::Make => Ok(vec![step("make", &["test"])]),
@@ -117,7 +123,7 @@ mod tests {
 
     #[test]
     fn elixir_ci_has_three_steps() {
-        let s = steps(&ProjectKind::Elixir).unwrap();
+        let s = steps(&ProjectKind::Elixir { escript: false }).unwrap();
         assert_eq!(s.len(), 3);
         assert_eq!(s[0].to_string(), "mix format --check-formatted");
         assert_eq!(s[1].to_string(), "mix compile --warnings-as-errors");
@@ -161,6 +167,23 @@ mod tests {
     fn ruby_ci() {
         let s = steps(&ProjectKind::Ruby).unwrap();
         assert_eq!(s[0].to_string(), "bundle exec rake test");
+    }
+
+    #[test]
+    fn swift_ci() {
+        let s = steps(&ProjectKind::Swift).unwrap();
+        assert_eq!(s.len(), 2);
+        assert_eq!(s[0].to_string(), "swift build");
+        assert_eq!(s[1].to_string(), "swift test");
+    }
+
+    #[test]
+    fn dotnet_ci() {
+        let s = steps(&ProjectKind::DotNet { sln: false }).unwrap();
+        assert_eq!(s.len(), 3);
+        assert_eq!(s[0].to_string(), "dotnet format --verify-no-changes");
+        assert_eq!(s[1].to_string(), "dotnet build");
+        assert_eq!(s[2].to_string(), "dotnet test");
     }
 
     #[test]

@@ -1,7 +1,7 @@
 //! `uu doctor` — show detected project and check required external tools.
 
 use anyhow::Result;
-use uu_detect::{command_on_path, detect, supported_table, NodePM, ProjectKind};
+use uu_detect::{command_on_path, detect_walk, supported_table, NodePM, ProjectKind};
 
 use crate::runner::style;
 
@@ -10,7 +10,7 @@ fn required_tools(kind: &ProjectKind) -> Vec<&'static str> {
     match kind {
         ProjectKind::Cargo => vec!["cargo", "rustfmt", "cargo-clippy"],
         ProjectKind::Go => vec!["go", "gofmt"],
-        ProjectKind::Elixir => vec!["mix"],
+        ProjectKind::Elixir { .. } => vec!["mix"],
         ProjectKind::Python { uv: true, .. } => vec!["uv", "python", "pytest", "ruff"],
         ProjectKind::Python { uv: false, .. } => vec!["pip", "python", "pytest", "ruff"],
         ProjectKind::Node { manager } => match manager {
@@ -23,6 +23,8 @@ fn required_tools(kind: &ProjectKind) -> Vec<&'static str> {
         ProjectKind::Gradle { wrapper: false } => vec!["gradle", "java"],
         ProjectKind::Maven => vec!["mvn", "java"],
         ProjectKind::Ruby => vec!["bundle", "ruby", "rubocop"],
+        ProjectKind::Swift => vec!["swift"],
+        ProjectKind::DotNet { .. } => vec!["dotnet"],
         ProjectKind::Meson => vec!["meson", "ninja"],
         ProjectKind::CMake => vec!["cmake", "ctest"],
         ProjectKind::Make => vec!["make"],
@@ -32,10 +34,15 @@ fn required_tools(kind: &ProjectKind) -> Vec<&'static str> {
 pub(crate) fn execute() -> Result<()> {
     let dir = std::env::current_dir()?;
 
-    match detect(&dir) {
-        Some(kind) => {
+    match detect_walk(&dir) {
+        Some((kind, project_dir)) => {
+            let note = if project_dir != dir {
+                format!(" in {}", project_dir.display())
+            } else {
+                String::new()
+            };
             eprintln!(
-                "{} {} \x1b[2m({})\x1b[0m",
+                "{} {} \x1b[2m({})\x1b[0m{note}",
                 style("36", "detected"),
                 kind.label(),
                 kind.detected_file()
@@ -103,6 +110,18 @@ mod tests {
         let tools = required_tools(&ProjectKind::Python { uv: false });
         assert!(tools.contains(&"pip"));
         assert!(!tools.contains(&"uv"));
+    }
+
+    #[test]
+    fn swift_tools() {
+        let tools = required_tools(&ProjectKind::Swift);
+        assert_eq!(tools, vec!["swift"]);
+    }
+
+    #[test]
+    fn dotnet_tools() {
+        let tools = required_tools(&ProjectKind::DotNet { sln: false });
+        assert_eq!(tools, vec!["dotnet"]);
     }
 
     #[test]

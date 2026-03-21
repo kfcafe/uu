@@ -10,7 +10,12 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
     match kind {
         ProjectKind::Cargo => vec![step("cargo", &["install", "--path", "."])],
         ProjectKind::Go => vec![step("go", &["install", "./..."])],
-        ProjectKind::Elixir => vec![step("mix", &["deps.get"]), step("mix", &["compile"])],
+        ProjectKind::Elixir { escript: true } => {
+            vec![step("mix", &["deps.get"]), step("mix", &["escript.build"])]
+        }
+        ProjectKind::Elixir { escript: false } => {
+            vec![step("mix", &["deps.get"]), step("mix", &["compile"])]
+        }
         ProjectKind::Python { uv: true } => vec![step("uv", &["pip", "install", "."])],
         ProjectKind::Python { uv: false } => vec![step("pip", &["install", "."])],
         ProjectKind::Node { manager } => {
@@ -26,6 +31,8 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::Gradle { wrapper: false } => vec![step("gradle", &["build"])],
         ProjectKind::Maven => vec![step("mvn", &["install"])],
         ProjectKind::Ruby => vec![step("bundle", &["install"])],
+        ProjectKind::Swift => vec![step("swift", &["build", "-c", "release"])],
+        ProjectKind::DotNet { .. } => vec![step("dotnet", &["publish", "-c", "Release"])],
         ProjectKind::Meson => vec![
             step("meson", &["setup", "builddir"]),
             step("meson", &["compile", "-C", "builddir"]),
@@ -86,6 +93,20 @@ mod tests {
     fn cmake_has_three_phases() {
         let s = steps(&ProjectKind::CMake);
         assert_eq!(s.len(), 3);
+    }
+
+    #[test]
+    fn swift_install() {
+        let s = steps(&ProjectKind::Swift);
+        assert_eq!(s[0].program, "swift");
+        assert_eq!(s[0].args, ["build", "-c", "release"]);
+    }
+
+    #[test]
+    fn dotnet_install() {
+        let s = steps(&ProjectKind::DotNet { sln: false });
+        assert_eq!(s[0].program, "dotnet");
+        assert_eq!(s[0].args, ["publish", "-c", "Release"]);
     }
 
     #[test]

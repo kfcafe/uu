@@ -35,12 +35,14 @@ fn single_dev_steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Node { manager } => Ok(vec![step(manager_cmd(manager), &["run", "dev"])]),
         ProjectKind::Cargo => Ok(vec![step("cargo", &["run"])]),
         ProjectKind::Go => Ok(vec![step("go", &["run", "."])]),
-        ProjectKind::Elixir => Ok(vec![step("mix", &["run"])]),
+        ProjectKind::Elixir { .. } => Ok(vec![step("mix", &["run"])]),
         ProjectKind::Python { uv } => python_dev_steps(*uv),
         ProjectKind::Gradle { wrapper: true } => Ok(vec![step("./gradlew", &["run"])]),
         ProjectKind::Gradle { wrapper: false } => Ok(vec![step("gradle", &["run"])]),
         ProjectKind::Maven => Ok(vec![step("mvn", &["compile", "exec:java"])]),
         ProjectKind::Ruby => Ok(vec![step("bundle", &["exec", "ruby", "app.rb"])]),
+        ProjectKind::Swift => Ok(vec![step("swift", &["run"])]),
+        ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["watch", "run"])]),
         ProjectKind::Make => Ok(vec![step("make", &["run"])]),
         ProjectKind::Meson | ProjectKind::CMake => {
             bail!(
@@ -317,6 +319,20 @@ mod tests {
         let s = single_dev_steps(&ProjectKind::Cargo).unwrap();
         assert_eq!(s[0].program, "cargo");
         assert_eq!(s[0].args, ["run"]);
+    }
+
+    #[test]
+    fn swift_dev_falls_back_to_run() {
+        let s = single_dev_steps(&ProjectKind::Swift).unwrap();
+        assert_eq!(s[0].program, "swift");
+        assert_eq!(s[0].args, ["run"]);
+    }
+
+    #[test]
+    fn dotnet_dev_uses_watch() {
+        let s = single_dev_steps(&ProjectKind::DotNet { sln: false }).unwrap();
+        assert_eq!(s[0].program, "dotnet");
+        assert_eq!(s[0].args, ["watch", "run"]);
     }
 
     #[test]

@@ -10,7 +10,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
     match kind {
         ProjectKind::Cargo => Ok(vec![step("cargo", &["check"])]),
         ProjectKind::Go => Ok(vec![step("go", &["test", "-run=^$", "./..."])]),
-        ProjectKind::Elixir => Ok(vec![step("mix", &["compile", "--warnings-as-errors"])]),
+        ProjectKind::Elixir { .. } => Ok(vec![step("mix", &["compile", "--warnings-as-errors"])]),
         ProjectKind::Python { .. } => bail!(
             "Python has no built-in typecheck\n\n  \
              try:\n    \
@@ -37,6 +37,8 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             "Ruby has no built-in typecheck\n\n  \
              try: srb tc    # gem install sorbet"
         ),
+        ProjectKind::Swift => Ok(vec![step("swift", &["build"])]),
+        ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["build", "--no-restore"])]),
         ProjectKind::Meson => Ok(vec![step("meson", &["compile", "-C", "builddir"])]),
         ProjectKind::CMake => Ok(vec![
             step("cmake", &["-B", "build"]),
@@ -75,7 +77,7 @@ mod tests {
 
     #[test]
     fn elixir_check() {
-        let s = steps(&ProjectKind::Elixir).unwrap();
+        let s = steps(&ProjectKind::Elixir { escript: false }).unwrap();
         assert_eq!(s[0].program, "mix");
         assert_eq!(s[0].args, ["compile", "--warnings-as-errors"]);
     }
@@ -130,6 +132,20 @@ mod tests {
     #[test]
     fn ruby_unsupported() {
         assert!(steps(&ProjectKind::Ruby).is_err());
+    }
+
+    #[test]
+    fn swift_check() {
+        let s = steps(&ProjectKind::Swift).unwrap();
+        assert_eq!(s[0].program, "swift");
+        assert_eq!(s[0].args, ["build"]);
+    }
+
+    #[test]
+    fn dotnet_check() {
+        let s = steps(&ProjectKind::DotNet { sln: false }).unwrap();
+        assert_eq!(s[0].program, "dotnet");
+        assert_eq!(s[0].args, ["build", "--no-restore"]);
     }
 
     #[test]

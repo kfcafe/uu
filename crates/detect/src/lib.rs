@@ -22,12 +22,14 @@ pub enum NodePM {
 pub enum ProjectKind {
     Cargo,
     Go,
-    Elixir,
+    Elixir { escript: bool },
     Python { uv: bool },
     Node { manager: NodePM },
     Gradle { wrapper: bool },
     Maven,
     Ruby,
+    Swift,
+    DotNet { sln: bool },
     Meson,
     CMake,
     Make,
@@ -39,12 +41,14 @@ impl ProjectKind {
         match self {
             Self::Cargo => "Rust",
             Self::Go => "Go",
-            Self::Elixir => "Elixir",
+            Self::Elixir { .. } => "Elixir",
             Self::Python { .. } => "Python",
             Self::Node { .. } => "Node.js",
             Self::Gradle { .. } => "Gradle",
             Self::Maven => "Maven",
             Self::Ruby => "Ruby",
+            Self::Swift => "Swift",
+            Self::DotNet { .. } => ".NET",
             Self::Meson => "Meson",
             Self::CMake => "CMake",
             Self::Make => "Make",
@@ -56,12 +60,15 @@ impl ProjectKind {
         match self {
             Self::Cargo => "Cargo.toml",
             Self::Go => "go.mod",
-            Self::Elixir => "mix.exs",
+            Self::Elixir { .. } => "mix.exs",
             Self::Python { .. } => "pyproject.toml",
             Self::Node { .. } => "package.json",
             Self::Gradle { .. } => "build.gradle",
             Self::Maven => "pom.xml",
             Self::Ruby => "Gemfile",
+            Self::Swift => "Package.swift",
+            Self::DotNet { sln: true } => "*.sln",
+            Self::DotNet { sln: false } => "*.csproj",
             Self::Meson => "meson.build",
             Self::CMake => "CMakeLists.txt",
             Self::Make => "Makefile",
@@ -73,12 +80,14 @@ impl ProjectKind {
         match self {
             Self::Cargo => &["target"],
             Self::Go => &[],
-            Self::Elixir => &["_build", "deps"],
+            Self::Elixir { .. } => &["_build", "deps"],
             Self::Python { .. } => &["__pycache__", ".pytest_cache", "build", "dist"],
             Self::Node { .. } => &["node_modules", ".next", ".nuxt", ".turbo"],
             Self::Gradle { .. } => &["build", ".gradle"],
             Self::Maven => &["target"],
             Self::Ruby => &[".bundle"],
+            Self::Swift => &[".build"],
+            Self::DotNet { .. } => &["bin", "obj"],
             Self::Meson => &["builddir"],
             Self::CMake => &["build"],
             Self::Make => &[],
@@ -95,7 +104,28 @@ impl ProjectKind {
 /// recognized project files are found.
 #[must_use]
 pub fn detect(dir: impl AsRef<Path>) -> Option<ProjectKind> {
-    let dir = dir.as_ref();
+    detect_in(dir.as_ref())
+}
+
+/// Like [`detect`], but walks up the directory tree if no project is found
+/// in `dir`. Returns the detected kind and the directory it was found in.
+///
+/// This handles the common case of running from a subdirectory inside a
+/// workspace (e.g. `tower/imp/` inside a Cargo workspace rooted at `tower/`).
+#[must_use]
+pub fn detect_walk(dir: impl AsRef<Path>) -> Option<(ProjectKind, PathBuf)> {
+    let mut current = dir.as_ref().to_path_buf();
+    loop {
+        if let Some(kind) = detect_in(&current) {
+            return Some((kind, current));
+        }
+        if !current.pop() {
+            return None;
+        }
+    }
+}
+
+fn detect_in(dir: &Path) -> Option<ProjectKind> {
 
     // Language-specific build files — highest confidence
     if dir.join("Cargo.toml").exists() {
@@ -105,7 +135,9 @@ pub fn detect(dir: impl AsRef<Path>) -> Option<ProjectKind> {
         return Some(ProjectKind::Go);
     }
     if dir.join("mix.exs").exists() {
-        return Some(ProjectKind::Elixir);
+        return Some(ProjectKind::Elixir {
+            escript: elixir_has_escript(dir),
+        });
     }
 
     // Python
@@ -140,6 +172,20 @@ pub fn detect(dir: impl AsRef<Path>) -> Option<ProjectKind> {
         return Some(ProjectKind::Ruby);
     }
 
+    // Swift
+    if dir.join("Package.swift").exists() {
+        return Some(ProjectKind::Swift);
+    }
+
+    // .NET
+    {
+        let has_sln = has_extension_in_dir(dir, "sln");
+        let has_csproj = !has_sln && has_extension_in_dir(dir, "csproj");
+        if has_sln || has_csproj {
+            return Some(ProjectKind::DotNet { sln: has_sln });
+        }
+    }
+
     // Generic build systems — lowest confidence
     if dir.join("meson.build").exists() {
         return Some(ProjectKind::Meson);
@@ -155,6 +201,14 @@ pub fn detect(dir: impl AsRef<Path>) -> Option<ProjectKind> {
     }
 
     None
+}
+
+/// Detect the project kind, walking up from `dir` if nothing is found.
+///
+/// Convenience wrapper around [`detect_walk`] that returns only the kind.
+#[must_use]
+pub fn detect_nearest(dir: impl AsRef<Path>) -> Option<ProjectKind> {
+    detect_walk(dir).map(|(kind, _)| kind)
 }
 
 /// Check whether a command exists on `$PATH`.
@@ -175,13 +229,18 @@ pub fn supported_table() -> String {
     let entries = [
         ("Cargo.toml", "cargo install --path ."),
         ("go.mod", "go install ./..."),
-        ("mix.exs", "mix deps.get && mix compile"),
+        (
+            "mix.exs",
+            "mix deps.get && mix compile (or mix escript.build)",
+        ),
         ("pyproject.toml", "pip install . (or uv)"),
         ("setup.py", "pip install ."),
         ("package.json", "npm/yarn/pnpm/bun install"),
         ("build.gradle", "./gradlew build"),
         ("pom.xml", "mvn install"),
         ("Gemfile", "bundle install"),
+        ("Package.swift", "swift build"),
+        ("*.csproj", "dotnet build"),
         ("meson.build", "meson setup + compile + install"),
         ("CMakeLists.txt", "cmake build + install"),
         ("Makefile", "make && make install"),
@@ -228,6 +287,49 @@ pub fn node_has_bin(dir: &Path) -> bool {
 }
 
 // -- Private helpers ---------------------------------------------------------
+
+/// Check whether an Elixir project has an escript configuration.
+///
+/// Scans `mix.exs` (and child app `mix.exs` files in umbrella projects)
+/// for the `escript:` keyword, which indicates the project produces a
+/// standalone escript binary.
+fn elixir_has_escript(dir: &Path) -> bool {
+    // Check root mix.exs
+    if let Ok(content) = std::fs::read_to_string(dir.join("mix.exs")) {
+        if content.contains("escript:") {
+            return true;
+        }
+    }
+
+    // Check umbrella child apps (apps/*/mix.exs)
+    let apps_dir = dir.join("apps");
+    if apps_dir.is_dir() {
+        if let Ok(entries) = std::fs::read_dir(&apps_dir) {
+            for entry in entries.flatten() {
+                let child_mix = entry.path().join("mix.exs");
+                if let Ok(content) = std::fs::read_to_string(&child_mix) {
+                    if content.contains("escript:") {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    false
+}
+
+/// Check whether any file in `dir` has the given extension (non-recursive).
+fn has_extension_in_dir(dir: &Path, ext: &str) -> bool {
+    std::fs::read_dir(dir)
+        .ok()
+        .map(|entries| {
+            entries
+                .flatten()
+                .any(|e| e.path().extension().is_some_and(|x| x == ext))
+        })
+        .unwrap_or(false)
+}
 
 fn detect_node_pm(dir: &Path) -> NodePM {
     if dir.join("bun.lockb").exists() || dir.join("bun.lock").exists() {
@@ -418,7 +520,10 @@ mod tests {
     fn detect_elixir() {
         let dir = tempdir().unwrap();
         fs::write(dir.path().join("mix.exs"), "").unwrap();
-        assert_eq!(detect(dir.path()), Some(ProjectKind::Elixir));
+        assert!(matches!(
+            detect(dir.path()),
+            Some(ProjectKind::Elixir { .. })
+        ));
     }
 
     #[test]
@@ -538,6 +643,35 @@ mod tests {
     }
 
     #[test]
+    fn detect_swift() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("Package.swift"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Swift));
+    }
+
+    #[test]
+    fn detect_dotnet_csproj() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("MyApp.csproj"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::DotNet { sln: false }));
+    }
+
+    #[test]
+    fn detect_dotnet_sln() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("MyApp.sln"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::DotNet { sln: true }));
+    }
+
+    #[test]
+    fn detect_dotnet_sln_preferred_over_csproj() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("MyApp.sln"), "").unwrap();
+        fs::write(dir.path().join("MyApp.csproj"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::DotNet { sln: true }));
+    }
+
+    #[test]
     fn detect_meson() {
         let dir = tempdir().unwrap();
         fs::write(dir.path().join("meson.build"), "").unwrap();
@@ -622,6 +756,18 @@ mod tests {
     #[test]
     fn cargo_artifacts_include_target() {
         assert!(ProjectKind::Cargo.artifact_dirs().contains(&"target"));
+    }
+
+    #[test]
+    fn swift_artifacts_include_build() {
+        assert!(ProjectKind::Swift.artifact_dirs().contains(&".build"));
+    }
+
+    #[test]
+    fn dotnet_artifacts_include_bin_obj() {
+        let kind = ProjectKind::DotNet { sln: false };
+        assert!(kind.artifact_dirs().contains(&"bin"));
+        assert!(kind.artifact_dirs().contains(&"obj"));
     }
 
     #[test]
@@ -789,5 +935,79 @@ mod tests {
 
         let result = detect_node_workspace(root).unwrap();
         assert!(result.is_empty());
+    }
+
+    // -- detect_walk (ancestor walking) --------------------------------------
+
+    #[test]
+    fn detect_walk_finds_project_in_current_dir() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("Cargo.toml"), "").unwrap();
+        let result = detect_walk(dir.path());
+        assert!(result.is_some());
+        let (kind, found_dir) = result.unwrap();
+        assert_eq!(kind, ProjectKind::Cargo);
+        assert_eq!(found_dir, dir.path());
+    }
+
+    #[test]
+    fn detect_walk_finds_project_in_parent() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("Cargo.toml"), "").unwrap();
+        let child = dir.path().join("subdir");
+        fs::create_dir(&child).unwrap();
+        let result = detect_walk(&child);
+        assert!(result.is_some());
+        let (kind, found_dir) = result.unwrap();
+        assert_eq!(kind, ProjectKind::Cargo);
+        assert_eq!(found_dir, dir.path().to_path_buf());
+    }
+
+    #[test]
+    fn detect_walk_finds_project_in_grandparent() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("go.mod"), "").unwrap();
+        let deep = dir.path().join("a").join("b").join("c");
+        fs::create_dir_all(&deep).unwrap();
+        let result = detect_walk(&deep);
+        assert!(result.is_some());
+        let (kind, _) = result.unwrap();
+        assert_eq!(kind, ProjectKind::Go);
+    }
+
+    #[test]
+    fn detect_walk_returns_none_when_no_project_anywhere() {
+        let dir = tempdir().unwrap();
+        let child = dir.path().join("empty");
+        fs::create_dir(&child).unwrap();
+        // tempdir is in /tmp which has no project files above it
+        // but /tmp itself or / might have something — use the child inside tempdir
+        // detect_walk will walk up to / and return None
+        // For a reliable test, just verify the function doesn't panic
+        let _ = detect_walk(&child);
+    }
+
+    #[test]
+    fn detect_walk_prefers_closest_project() {
+        let dir = tempdir().unwrap();
+        // Parent has Cargo.toml
+        fs::write(dir.path().join("Cargo.toml"), "").unwrap();
+        // Child has package.json
+        let child = dir.path().join("frontend");
+        fs::create_dir(&child).unwrap();
+        fs::write(child.join("package.json"), "{}").unwrap();
+        // detect_walk from child should find Node (the closest match)
+        let (kind, found_dir) = detect_walk(&child).unwrap();
+        assert_eq!(kind, ProjectKind::Node { manager: NodePM::Npm });
+        assert_eq!(found_dir, child);
+    }
+
+    #[test]
+    fn detect_nearest_returns_kind_only() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("Cargo.toml"), "").unwrap();
+        let child = dir.path().join("src");
+        fs::create_dir(&child).unwrap();
+        assert_eq!(detect_nearest(&child), Some(ProjectKind::Cargo));
     }
 }

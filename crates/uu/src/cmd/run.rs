@@ -12,7 +12,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
     match kind {
         ProjectKind::Cargo => Ok(vec![step("cargo", &["run"])]),
         ProjectKind::Go => Ok(vec![step("go", &["run", "."])]),
-        ProjectKind::Elixir => Ok(vec![step("mix", &["run"])]),
+        ProjectKind::Elixir { .. } => Ok(vec![step("mix", &["run"])]),
         ProjectKind::Python { uv: true } => python_steps("uv", &["run"]),
         ProjectKind::Python { uv: false } => python_steps("python", &[]),
         ProjectKind::Node { manager } => {
@@ -28,6 +28,8 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Gradle { wrapper: false } => Ok(vec![step("gradle", &["run"])]),
         ProjectKind::Maven => Ok(vec![step("mvn", &["compile", "exec:java"])]),
         ProjectKind::Ruby => Ok(vec![step("bundle", &["exec", "ruby", "app.rb"])]),
+        ProjectKind::Swift => Ok(vec![step("swift", &["run"])]),
+        ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["run"])]),
         ProjectKind::Make => Ok(vec![step("make", &["run"])]),
         ProjectKind::Meson | ProjectKind::CMake => {
             bail!(
@@ -88,6 +90,20 @@ mod tests {
     fn go_run() {
         let s = steps(&ProjectKind::Go).unwrap();
         assert_eq!(s[0].args, ["run", "."]);
+    }
+
+    #[test]
+    fn swift_run() {
+        let s = steps(&ProjectKind::Swift).unwrap();
+        assert_eq!(s[0].program, "swift");
+        assert_eq!(s[0].args, ["run"]);
+    }
+
+    #[test]
+    fn dotnet_run() {
+        let s = steps(&ProjectKind::DotNet { sln: false }).unwrap();
+        assert_eq!(s[0].program, "dotnet");
+        assert_eq!(s[0].args, ["run"]);
     }
 
     #[test]

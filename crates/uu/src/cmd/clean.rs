@@ -102,6 +102,8 @@ fn native_clean_cmd(kind: &ProjectKind) -> Option<(&'static str, Vec<&'static st
         ProjectKind::Gradle { wrapper: false } => Some(("gradle", vec!["clean"])),
         ProjectKind::Maven => Some(("mvn", vec!["clean"])),
         ProjectKind::Make => Some(("make", vec!["clean"])),
+        ProjectKind::Swift => Some(("swift", vec!["package", "clean"])),
+        ProjectKind::DotNet { .. } => Some(("dotnet", vec!["clean"])),
         // These ecosystems don't have a clean command — we remove dirs directly
         _ => None,
     }
@@ -173,6 +175,20 @@ mod tests {
     fn native_clean_for_cargo() {
         let (cmd, args) = native_clean_cmd(&ProjectKind::Cargo).unwrap();
         assert_eq!(cmd, "cargo");
+        assert_eq!(args, ["clean"]);
+    }
+
+    #[test]
+    fn native_clean_for_swift() {
+        let (cmd, args) = native_clean_cmd(&ProjectKind::Swift).unwrap();
+        assert_eq!(cmd, "swift");
+        assert_eq!(args, ["package", "clean"]);
+    }
+
+    #[test]
+    fn native_clean_for_dotnet() {
+        let (cmd, args) = native_clean_cmd(&ProjectKind::DotNet { sln: false }).unwrap();
+        assert_eq!(cmd, "dotnet");
         assert_eq!(args, ["clean"]);
     }
 

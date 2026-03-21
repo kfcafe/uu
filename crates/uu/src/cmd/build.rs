@@ -10,7 +10,8 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
     match kind {
         ProjectKind::Cargo => vec![step("cargo", &["build"])],
         ProjectKind::Go => vec![step("go", &["build", "./..."])],
-        ProjectKind::Elixir => vec![step("mix", &["compile"])],
+        ProjectKind::Elixir { escript: true } => vec![step("mix", &["escript.build"])],
+        ProjectKind::Elixir { escript: false } => vec![step("mix", &["compile"])],
         ProjectKind::Python { uv: true, .. } => vec![step("uv", &["run", "python", "-m", "build"])],
         ProjectKind::Python { uv: false, .. } => vec![step("python", &["-m", "build"])],
         ProjectKind::Node { manager } => {
@@ -26,6 +27,8 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::Gradle { wrapper: false } => vec![step("gradle", &["build"])],
         ProjectKind::Maven => vec![step("mvn", &["package"])],
         ProjectKind::Ruby => vec![step("bundle", &["exec", "rake", "build"])],
+        ProjectKind::Swift => vec![step("swift", &["build"])],
+        ProjectKind::DotNet { .. } => vec![step("dotnet", &["build"])],
         ProjectKind::Meson => vec![
             step("meson", &["setup", "builddir"]),
             step("meson", &["compile", "-C", "builddir"]),
@@ -104,6 +107,20 @@ mod tests {
     fn python_with_uv() {
         let s = steps(&ProjectKind::Python { uv: true });
         assert_eq!(s[0].program, "uv");
+    }
+
+    #[test]
+    fn swift_build() {
+        let s = steps(&ProjectKind::Swift);
+        assert_eq!(s[0].program, "swift");
+        assert_eq!(s[0].args, ["build"]);
+    }
+
+    #[test]
+    fn dotnet_build() {
+        let s = steps(&ProjectKind::DotNet { sln: false });
+        assert_eq!(s[0].program, "dotnet");
+        assert_eq!(s[0].args, ["build"]);
     }
 
     #[test]

@@ -5,7 +5,7 @@ use std::fmt;
 use std::process::{self, Command, Stdio};
 
 use anyhow::{Context, Result};
-use uu_detect::{detect, supported_table, ProjectKind};
+use uu_detect::{detect_walk, supported_table, ProjectKind};
 
 /// A single shell command to execute.
 pub(crate) struct Step {
@@ -35,16 +35,29 @@ pub(crate) fn step(program: &str, args: &[&str]) -> Step {
     }
 }
 
-/// Detect the project kind in the current working directory.
+/// Detect the project kind, walking up from the current directory.
+///
+/// If the project file is found in a parent directory, changes the working
+/// directory to that parent so commands run in the right place.
 pub(crate) fn detect_project() -> Result<ProjectKind> {
     let dir = env::current_dir().context("failed to read current directory")?;
-    detect(&dir).ok_or_else(|| {
+    let (kind, project_dir) = detect_walk(&dir).ok_or_else(|| {
         anyhow::anyhow!(
             "no recognized project in {}\n\n{}",
             dir.display(),
             supported_table()
         )
-    })
+    })?;
+    // If the project root is an ancestor, cd into it so cargo/go/etc. work.
+    if project_dir != dir {
+        env::set_current_dir(&project_dir).with_context(|| {
+            format!(
+                "cannot change to detected project root `{}`",
+                project_dir.display()
+            )
+        })?;
+    }
+    Ok(kind)
 }
 
 /// Append extra CLI arguments to the last step in a sequence.

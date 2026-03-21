@@ -10,7 +10,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
     match kind {
         ProjectKind::Cargo => Ok(vec![step("cargo", &["fmt"])]),
         ProjectKind::Go => Ok(vec![step("gofmt", &["-w", "."])]),
-        ProjectKind::Elixir => Ok(vec![step("mix", &["format"])]),
+        ProjectKind::Elixir { .. } => Ok(vec![step("mix", &["format"])]),
         ProjectKind::Python { uv: true, .. } => {
             if command_on_path("ruff") {
                 Ok(vec![step("uv", &["run", "ruff", "format", "."])])
@@ -55,6 +55,11 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
              try: mvn com.spotify.fmt:fmt-maven-plugin:format"
         ),
         ProjectKind::Ruby => Ok(vec![step("bundle", &["exec", "rubocop", "-a"])]),
+        ProjectKind::Swift => bail!(
+            "Swift has no built-in formatter\n\n  \
+             try: swift-format format -i -r .    # brew install swift-format"
+        ),
+        ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["format"])]),
         ProjectKind::Meson => bail!(
             "Meson has no built-in formatter\n\n  \
              try: muon fmt meson.build"
@@ -96,7 +101,7 @@ mod tests {
 
     #[test]
     fn elixir_format() {
-        let s = steps(&ProjectKind::Elixir).unwrap();
+        let s = steps(&ProjectKind::Elixir { escript: false }).unwrap();
         assert_eq!(s[0].program, "mix");
         assert_eq!(s[0].args, ["format"]);
     }
@@ -126,6 +131,18 @@ mod tests {
         let s = steps(&ProjectKind::Gradle { wrapper: true }).unwrap();
         assert_eq!(s[0].program, "./gradlew");
         assert_eq!(s[0].args, ["spotlessApply"]);
+    }
+
+    #[test]
+    fn swift_unsupported() {
+        assert!(steps(&ProjectKind::Swift).is_err());
+    }
+
+    #[test]
+    fn dotnet_fmt() {
+        let s = steps(&ProjectKind::DotNet { sln: false }).unwrap();
+        assert_eq!(s[0].program, "dotnet");
+        assert_eq!(s[0].args, ["format"]);
     }
 
     #[test]
