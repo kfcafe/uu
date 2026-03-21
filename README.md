@@ -1,6 +1,6 @@
 <div align="center">
   <h1>uu</h1>
-  <p><strong>Universal utilities — zero-config developer tools that detect your project and do the right thing.</strong></p>
+  <p><strong>One command for every project. Zero config.</strong></p>
 
   <p>
     <a href="https://www.rust-lang.org/"><img alt="Rust" src="https://img.shields.io/badge/rust-stable-orange?logo=rust&logoColor=white"></a>
@@ -11,17 +11,17 @@
   <p>
     <a href="#install">Install</a> ·
     <a href="#commands">Commands</a> ·
+    <a href="#map">Map</a> ·
     <a href="#supported-ecosystems">Ecosystems</a> ·
-    <a href="#contributing">Contributing</a> ·
-    <a href="LICENSE">License</a>
+    <a href="#how-it-works">How It Works</a>
   </p>
 </div>
 
 ---
 
-You shouldn't have to remember if it's `cargo install --path .` or `go install ./...` or `pip install .` or `npm install`. You shouldn't have to look up `lsof -iTCP -sTCP:LISTEN -nP` every time you need to find what's hogging port 3000.
+You shouldn't have to remember if it's `cargo install --path .` or `go install ./...` or `pip install .`. You shouldn't have to google `lsof` flags every time port 3000 is stuck.
 
-Just type `uu`.
+`uu` detects your project and runs the right thing.
 
 ```
 $ uu install                  $ uu clean
@@ -30,18 +30,13 @@ $ uu install                  $ uu clean
         done ✓                         freed 287.3 MB
 
 $ uu doctor                   $ uu test
-    detected Rust (Cargo.toml)      detected Node.js (package.json)
-  ✓ cargo                          running npm test
+    detected Rust (Cargo.toml)      detected Go (go.mod)
+  ✓ cargo                          running go test ./...
   ✓ rustfmt                           done ✓
   ✓ cargo-clippy
-
-$ uu test                     $ uu ports
-    detected Go (go.mod)          PORT      PID  COMMAND          USER
-     running go test ./...        3000    12345  node             asher
-        done ✓                    5432     1234  postgres         asher
 ```
 
-No config files. No setup. `cd` into a project and go.
+It works across 13 ecosystems. No config files. No setup. `cd` into a project and go.
 
 ## Install
 
@@ -62,291 +57,243 @@ cargo install --path crates/uu
 
 ## Commands
 
-### `uu build`
+Every command auto-detects your project type. Pass extra arguments after `--`. Use `-n` / `--dry-run` to preview without executing.
 
-Detect the project type and compile.
+| Command | What it does |
+|---------|-------------|
+| `uu build` | Compile the project |
+| `uu check` | Typecheck without running tests — faster feedback loop |
+| `uu ci` | Full CI pipeline: format check → lint → test (stops on first failure) |
+| `uu clean` | Remove build artifacts, show how much space you get back |
+| `uu dev` | Start dev servers — workspace-aware, runs packages concurrently |
+| `uu doctor` | Check that required tools are installed |
+| `uu fmt` | Auto-format code |
+| `uu install` | Install the project (and link binaries for Node.js `bin` packages) |
+| `uu lint` | Run the linter |
+| `uu map` | Generate and explore a project manifest — [see below](#map) |
+| `uu ports` | See what's listening on every port — kill with `uu ports 3000 -k` |
+| `uu run` | Run the project |
+| `uu test` | Run the test suite |
 
-```
-$ uu build
-    detected Rust (Cargo.toml)
-     running cargo build
-        done ✓
-```
+### Workspace-aware dev servers
 
-Pass extra arguments after `--`:
-
-```
-$ uu build -- --release
-    detected Rust (Cargo.toml)
-     running cargo build --release
-```
-
-For Node.js projects, runs your `build` script. If there's no `build` script in package.json, skips gracefully instead of failing:
-
-```
-$ uu build
-    detected Node.js (package.json)
-     skipped no "build" script in package.json — nothing to build
-```
-
-### `uu check`
-
-Typecheck or compile without running tests. Faster feedback than `uu test`.
-
-```
-$ uu check
-    detected Rust (Cargo.toml)
-     running cargo check
-        done ✓
-```
-
-For Go, compiles test files without executing (`go test -run=^$ ./...`). For Node.js, runs your `typecheck` script. Ecosystems without a meaningful typecheck (Python, Ruby) bail with a suggestion.
-
-### `uu ci`
-
-Full CI pipeline in one command: format check → lint → test. Stops on first failure.
-
-```
-$ uu ci
-    detected Rust (Cargo.toml)
-     running cargo fmt --check
-     running cargo clippy -- -D warnings
-     running cargo test
-        done ✓
-```
-
-Pass extra arguments after `--` (appended to the last step):
-
-```
-$ uu ci -- --no-fail-fast
-```
-
-### `uu install`
-
-Detect and install.
-
-```
-$ uu install
-    detected Rust (Cargo.toml)
-     running cargo install --path .
-        done ✓
-```
-
-For Node.js projects with a `bin` field in package.json, also links the binary onto your PATH:
-
-```
-$ uu install
-    detected Node.js (package.json)
-     running bun install
-     running bun link
-        done ✓
-```
-
-### `uu run`
-
-Detect and run.
-
-```
-$ uu run
-    detected Go (go.mod)
-     running go run .
-```
-
-For Python, auto-detects the entry point: `manage.py` (Django), `app.py` (Flask), or `main.py`.
-
-### `uu dev`
-
-Start dev servers. In a monorepo, detects workspace packages and runs their `dev` scripts concurrently with colored, prefixed output.
+`uu dev` is the most opinionated command. In a Node.js monorepo, it detects workspace packages and runs their `dev` scripts concurrently with colored, prefixed output:
 
 ```
 $ uu dev
     detected Node.js workspace (pnpm, 6 packages)
      running agent · tsc --watch
      running api · doppler run -- tsx watch src/index.ts
-     running desktop · cargo tauri dev
-     running extension · vite build --watch
-     running shared · tsc --watch
      running web · vite dev
        [api] Listening on :3001
        [web] VITE v6.4.1 ready in 200ms
 ```
 
-Run specific packages only:
+Run specific packages with `uu dev api web`. Add `-o` to open the first localhost URL in your browser.
 
-```
-$ uu dev api web
-    detected Node.js workspace (pnpm, 2 packages)
-     running api · doppler run -- tsx watch src/index.ts
-     running web · vite dev
-```
+## Map
 
-Open the first detected localhost URL in your browser with `-o`:
+`uu map` is a codebase intelligence tool. It uses tree-sitter to parse your source code and extract a structured manifest of every type, function, module, route, model, and integration — across 11 languages and 16 frameworks.
 
-```
-$ uu dev api web -o
-    detected Node.js workspace (pnpm, 2 packages)
-     running api · doppler run -- tsx watch src/index.ts
-     running web · vite dev
-     opening http://localhost:5173/
+### Generate a manifest
+
+```sh
+uu map                      # writes .map.yaml
+uu map --format json        # writes .map.json
+uu map --format md          # writes .map.md (readable markdown)
+uu map --stdout             # print to stdout instead of file
+uu map --diff               # show what changed since last generation
+uu map -n                   # dry run — show counts without writing
 ```
 
-In a non-workspace project, runs the `dev` script directly (`pnpm run dev`, `npm run dev`, etc.).
+### Query a symbol
 
-### `uu test`
-
-Detect and test.
+Look up any type, function, module, or route by name. Shows fields, methods, source location, trait implementations, and cross-references.
 
 ```
-$ uu test
-    detected Node.js (package.json)
-     running npm test
+$ uu map query Manifest
+type Manifest (struct)
+  source: crates/manifest/src/schema.rs:18
+  fields:
+    project: ProjectMeta
+    types: BTreeMap<String, TypeDef>
+    functions: BTreeMap<String, Function>
+    modules: BTreeMap<String, Module>
+    routes: BTreeMap<String, Route>
+    ...
+
+$ uu map query Adapter --refs
+type Adapter (trait)
+  source: crates/manifest/src/adapters/mod.rs:25
+  methods: name, detect, extract, priority, layer
+
+  referenced by:
+    fn all_adapters
+    type RustAdapter
+    type GoAdapter
+    type PythonAdapter
+    ...
 ```
 
-### `uu lint`
-
-Detect and lint.
+Typo? It suggests corrections:
 
 ```
-$ uu lint
-    detected Rust (Cargo.toml)
-     running cargo clippy -- -D warnings
-        done ✓
+$ uu map query Manifes
+No symbol found matching 'Manifes'
+Did you mean:
+  Manifest
+  ManifestDiff
+  ManifestFragment
 ```
 
-For Python, uses `ruff check .` if available, falls back to `flake8`. Some ecosystems (Maven, Meson, CMake, Make) have no standard linter — `uu lint` tells you what to try.
+### Search across symbols
 
-### `uu fmt`
-
-Detect and format. **May modify files.**
+Find everything related to a concept across the entire project:
 
 ```
-$ uu fmt
-    detected Rust (Cargo.toml)
-     running cargo fmt
-        done ✓
+$ uu map search auth
+Found 8 matches for 'auth':
+
+  Types:
+    AuthConfig          (struct, 2 fields)    src/schema.rs:271
+    AuthJsAdapter       (struct, 5 methods)   src/adapters/framework/authjs.rs:9
+  Functions:
+    authenticate        (pub fn ...)          src/auth.rs:15
+  Routes:
+    [POST] /api/auth/login                    src/routes/auth.rs
 ```
 
-For Python, uses `ruff format .` if available, falls back to `black .`.
+Filter by category with `-c`:
 
-### `uu clean`
-
-Remove build artifacts. Shows what's deleted and how much space you get back.
-
-```
-$ uu clean
-    detected Rust (Cargo.toml)
-     running cargo clean
-    removing target/ (1.2 GB)
-       freed 1.2 GB
+```sh
+uu map search detect -c fn      # only functions
+uu map search user -c types     # only types
 ```
 
-### `uu doctor`
-
-Check detection and tool availability. Useful when commands fail because a tool is missing.
+### Codebase statistics
 
 ```
-$ uu doctor
-    detected Rust (Cargo.toml)
+$ uu map stats
+Project: uu (Rust)
 
-  ✓ cargo
-  ✓ rustfmt
-  ✓ cargo-clippy
+Summary
+  Types:      58
+  Functions:  40
+  Modules:    57
+
+Visibility
+  Types:     52 public, 6 internal, 0 private
+  Functions: 19 public, 21 internal, 0 private
+
+Type breakdown
+  Structs          50
+  Enums             7
+  Traits            1
+
+Top modules by symbol count
+  manifest::schema        18 types, 2 functions
+  detect::lib              3 types, 9 functions
+  uu::runner               1 type, 5 functions
+
+Traits
+  Adapter → RustAdapter, GoAdapter, PythonAdapter, ...
 ```
 
-Missing tools show as `✗`:
+### Module tree
 
 ```
-$ uu doctor
-    detected Python (pyproject.toml)
+$ uu map tree
+uu (Rust)
+detect
+└── lib (3 types, 9 fns)
+manifest
+├── adapters (2 types, 1 fn)
+│   ├── framework
+│   │   ├── aspnet (1 type)
+│   │   ├── axum (1 type)
+│   │   └── ... (13 more)
+│   └── lang
+│       ├── rust (1 type)
+│       ├── go (1 type)
+│       └── ... (9 more)
+├── context (1 type, 1 fn)
+├── diff (2 types, 3 fns)
+└── schema (18 types, 2 fns)
+uu
+├── cmd
+│   ├── map (2 types)
+│   │   ├── format (15 fns)
+│   │   ├── generate (1 type)
+│   │   ├── query (1 type)
+│   │   └── ...
+│   └── ... (10 more)
+└── runner (1 type, 5 fns)
 
-  ✓ pip
-  ✓ python
-  ✗ pytest
-  ✓ ruff
+57 modules, 58 types, 40 functions
 ```
 
-If no project is detected, prints the list of supported project files.
+### Supported languages & frameworks
 
-### `uu ports`
+`uu map` uses tree-sitter for accurate AST-level extraction — no regex, no guessing.
 
-See what's listening. Kill by port number.
+**Languages:** Rust, Go, Python, TypeScript, JavaScript, Elixir, Java, Ruby, Swift, C#, C/C++
 
-```
-$ uu ports
-    PORT      PID  COMMAND          USER
-    3000    12345  node             asher
-    5432     1234  postgres         asher
-    8080     5678  java             asher
-
-  3 listeners
-
-$ uu ports 3000 -k
-    killing node (pid 12345, :3000)
-```
-
-### Dry run
-
-Every project command supports `-n` / `--dry-run`:
-
-```
-$ uu install -n
-    detected Rust (Cargo.toml)
-  would run cargo install --path .
-```
+**Frameworks:** Next.js, Express, Prisma, shadcn/ui, Auth.js, Axum, Django, FastAPI, Phoenix, Ecto, Rails, Spring, Gin, GORM, ASP.NET
 
 ## Supported Ecosystems
 
-`uu` detects projects by looking for build system files. When multiple are present, it picks the most specific one.
+`uu` detects projects by looking for build system files. When multiple are present, it picks the most specific one (Cargo.toml beats Makefile).
 
 | Priority | File | Ecosystem | `build` | `check` | `ci` | `install` | `test` | `run` | `dev` | `fmt` | `lint` |
 |:--------:|------|-----------|---------|---------|------|-----------|--------|-------|-------|-------|--------|
-| 1 | `Cargo.toml` | Rust | `cargo build` | `cargo check` | fmt‑check + clippy + test | `cargo install --path .` | `cargo test` | `cargo run` | `cargo run`⁵ | `cargo fmt` | `cargo clippy` |
-| 2 | `go.mod` | Go | `go build ./...` | `go test -run=^$ ./...` | gofmt check + vet + test | `go install ./...` | `go test ./...` | `go run .` | `go run .`⁵ | `gofmt -w .` | `go vet ./...` |
-| 3 | `mix.exs` | Elixir | `mix compile` | `mix compile --warnings-as-errors` | format‑check + compile + test | `mix deps.get` + `mix compile` | `mix test` | `mix run` | `mix run`⁵ | `mix format` | `mix compile --warnings-as-errors` |
-| 4 | `pyproject.toml` | Python | `python -m build` | —¹ | ruff fmt‑check + check + pytest | `pip install .` | `pytest` | `python main.py` | `python main.py`⁵ | `ruff format .`² | `ruff check .`² |
-| 5 | `package.json` | Node.js | `npm run build`³ | `npm run typecheck`³ | lint + test³ | `npm install`³⁷ | `npm test`³ | `npm start`³ | `npm run dev`³⁶ | `npm run format`³ | `npm run lint`³ |
-| 6 | `build.gradle` | Gradle | `./gradlew build`⁴ | `./gradlew build -x test`⁴ | `./gradlew check`⁴ | `./gradlew build`⁴ | `./gradlew test`⁴ | `./gradlew run`⁴ | `./gradlew run`⁴⁵ | `./gradlew spotlessApply`⁴ | `./gradlew check`⁴ |
+| 1 | `Cargo.toml` | Rust | `cargo build` | `cargo check` | fmt‑check + clippy + test | `cargo install --path .` | `cargo test` | `cargo run` | `cargo run` | `cargo fmt` | `cargo clippy` |
+| 2 | `go.mod` | Go | `go build ./...` | `go test -run=^$ ./...` | gofmt check + vet + test | `go install ./...` | `go test ./...` | `go run .` | `go run .` | `gofmt -w .` | `go vet ./...` |
+| 3 | `mix.exs` | Elixir | `mix compile` | `mix compile --warnings-as-errors` | format‑check + compile + test | `mix deps.get` + `mix compile` | `mix test` | `mix run` | `mix run` | `mix format` | `mix compile --warnings-as-errors` |
+| 4 | `pyproject.toml` | Python | `python -m build` | — | ruff fmt‑check + check + pytest | `pip install .` | `pytest` | `python main.py` | `python main.py` | `ruff format .`¹ | `ruff check .`¹ |
+| 5 | `package.json` | Node.js | `npm run build`² | `npm run typecheck`² | lint + test² | `npm install`²³ | `npm test`² | `npm start`² | `npm run dev`²⁴ | `npm run format`² | `npm run lint`² |
+| 6 | `build.gradle` | Gradle | `./gradlew build`⁵ | `./gradlew build -x test`⁵ | `./gradlew check`⁵ | `./gradlew build`⁵ | `./gradlew test`⁵ | `./gradlew run`⁵ | `./gradlew run`⁵ | `./gradlew spotlessApply`⁵ | `./gradlew check`⁵ |
 | 7 | `pom.xml` | Maven | `mvn package` | `mvn -DskipTests package` | `mvn test` | `mvn install` | `mvn test` | — | — | — | — |
-| 8 | `Gemfile` | Ruby | `bundle exec rake build` | —¹ | `bundle exec rake test` | `bundle install` | `bundle exec rake test` | `rubocop -a` | `rubocop -a`⁵ | `rubocop` | `rubocop` |
-| 9 | `meson.build` | Meson | `meson setup` + `compile` | `meson compile` | `meson test` | `meson setup` + `install` | `meson test` | — | — | — | — |
-| 10 | `CMakeLists.txt` | CMake | `cmake -B` + `--build` | `cmake -B` + `--build` | `ctest` | `cmake` build + install | `ctest` | — | — | — | — |
-| 11 | `Makefile` | Make | `make` | `make` | `make test` | `make && make install` | `make test` | `make run` | `make run`⁵ | — | — |
+| 8 | `Gemfile` | Ruby | `bundle exec rake build` | — | `bundle exec rake test` | `bundle install` | `bundle exec rake test` | `rubocop -a` | `rubocop -a` | `rubocop` | `rubocop` |
+| 9 | `Package.swift` | Swift | `swift build` | `swift build` | build + test | `swift build -c release` | `swift test` | `swift run` | `swift run` | — | — |
+| 10 | `*.csproj` | .NET | `dotnet build` | `dotnet build` | fmt‑check + build + test | `dotnet publish` | `dotnet test` | `dotnet run` | `dotnet watch run` | `dotnet format` | `dotnet format`⁶ |
+| 11 | `meson.build` | Meson | `meson setup` + `compile` | `meson compile` | `meson test` | `meson setup` + `install` | `meson test` | — | — | — | — |
+| 12 | `CMakeLists.txt` | CMake | `cmake -B` + `--build` | `cmake -B` + `--build` | `ctest` | `cmake` build + install | `ctest` | — | — | — | — |
+| 13 | `Makefile` | Make | `make` | `make` | `make test` | `make && make install` | `make test` | `make run` | `make run` | — | — |
 
-¹ No built-in typecheck — `uu check` bails with suggestions (mypy/pyright for Python, Sorbet for Ruby).
-² Falls back to `black`/`flake8` if ruff is not installed. Bails with install instructions if neither is found.
-³ Detects your package manager from lockfile: npm, yarn, pnpm, or bun.
-⁴ Uses `./gradlew` wrapper if present, falls back to `gradle`.
-⁵ Falls back to same command as `run` (no dev/prod distinction in this ecosystem).
-⁶ Workspace-aware: in monorepos, `uu dev` runs all packages' `dev` scripts concurrently. Use `uu dev pkg1 pkg2` to select specific packages. Add `-o` to open the first localhost URL in your browser.
-⁷ If package.json has a `bin` field, also runs `<pm> link` to make the CLI available on PATH.
+¹ Falls back to `black`/`flake8` if ruff is not installed.
+² Detects your package manager from lockfile: npm, yarn, pnpm, or bun.
+³ If package.json has a `bin` field, also runs `<pm> link` to make the CLI available on PATH.
+⁴ Workspace-aware: in monorepos, runs all packages' `dev` scripts concurrently.
+⁵ Uses `./gradlew` wrapper if present, falls back to `gradle`.
+⁶ Uses `dotnet format --verify-no-changes` for lint (style check mode).
 
-Python auto-detects `uv` on your PATH and uses `uv pip install .` / `uv run pytest` when available.
+> [!NOTE]
+> Python auto-detects `uv` and uses it when available. Ecosystems without a standard typecheck (Python, Ruby) bail with a suggestion instead of failing silently. Node.js `uu build` skips gracefully if no `build` script exists.
 
-## Project Structure
+## How It Works
+
+`uu` is three crates:
+
+- **`uu-detect`** — scans the current directory for build system files (`Cargo.toml`, `go.mod`, `package.json`, etc.) and returns a `ProjectKind` with ecosystem-specific metadata. When multiple files exist, language-specific ones win over generic build systems.
+- **`uu-manifest`** — the map engine. Uses tree-sitter to parse source files via language and framework adapters. Produces a structured manifest of types, functions, modules, routes, models, and integrations. Supports diffing between manifests.
+- **`uu`** — the CLI binary. Each command maps the detected `ProjectKind` to the right shell command and runs it. The `map` command adds subcommands for querying and exploring the manifest interactively.
+
+The detection library is the engine. Add a new ecosystem once and every command learns it automatically.
 
 ```
 uu/
 ├── crates/
-│   ├── detect/     Shared project detection library
-│   └── uu/         CLI binary
+│   ├── detect/       Project detection library
+│   ├── manifest/     Tree-sitter manifest generator (11 languages, 16 frameworks)
+│   └── uu/           CLI binary
 └── README.md
 ```
 
-The `detect` crate is the engine. Add a new ecosystem once — every command learns it.
-
 ## Contributing
-
-To add support for a new ecosystem:
 
 1. Add a variant to `ProjectKind` in `crates/detect/src/lib.rs`
 2. Add detection logic in `detect()`
 3. Add the build/install/run/test/fmt/lint/ci/clean steps in each command module
-4. Run the verify gate: `cargo fmt --check && cargo clippy -- -D warnings && cargo test`
-
-## Stack
-
-Rust · clap
-
-## License
-
-[MIT](LICENSE)
+4. To add a new language adapter: create `crates/manifest/src/adapters/lang/<name>.rs` implementing the `Adapter` trait
+5. To add a new framework adapter: create `crates/manifest/src/adapters/framework/<name>.rs`
+6. Verify: `cargo fmt --check && cargo clippy -- -D warnings && cargo test`
