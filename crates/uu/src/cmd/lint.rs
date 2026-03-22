@@ -67,6 +67,19 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ),
         ProjectKind::Zig => bail!("Zig has no built-in linter"),
         ProjectKind::Make => bail!("Make has no built-in linter"),
+        ProjectKind::Php => Ok(vec![step("vendor/bin/phpstan", &["analyse"])]),
+        ProjectKind::Dart { .. } => Ok(vec![step("dart", &["analyze"])]),
+        ProjectKind::Haskell { .. } => Ok(vec![step("hlint", &["."])]),
+        ProjectKind::Clojure { lein: true } => Ok(vec![step("lein", &["eastwood"])]),
+        ProjectKind::Rebar => Ok(vec![step("rebar3", &["dialyzer"])]),
+        ProjectKind::Perl => Ok(vec![step("perlcritic", &["."])]),
+        ProjectKind::Nim => Ok(vec![step("nimble", &["check"])]),
+        ProjectKind::Bazel => Ok(vec![step("bazel", &["test", "//..."])]),
+        ProjectKind::Sbt | ProjectKind::Clojure { lein: false } | ProjectKind::Dune
+        | ProjectKind::Julia | ProjectKind::Crystal | ProjectKind::Vlang
+        | ProjectKind::Gleam | ProjectKind::Lua => {
+            bail!("{} has no built-in linter", kind.label())
+        }
     }
 }
 

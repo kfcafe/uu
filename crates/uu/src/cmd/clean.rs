@@ -104,6 +104,12 @@ fn native_clean_cmd(kind: &ProjectKind) -> Option<(&'static str, Vec<&'static st
         ProjectKind::Make => Some(("make", vec!["clean"])),
         ProjectKind::Swift => Some(("swift", vec!["package", "clean"])),
         ProjectKind::DotNet { .. } => Some(("dotnet", vec!["clean"])),
+        ProjectKind::Sbt => Some(("sbt", vec!["clean"])),
+        ProjectKind::Haskell { stack: true } => Some(("stack", vec!["clean"])),
+        ProjectKind::Haskell { stack: false } => Some(("cabal", vec!["clean"])),
+        ProjectKind::Dune => Some(("dune", vec!["clean"])),
+        ProjectKind::Gleam => Some(("gleam", vec!["clean"])),
+        ProjectKind::Bazel => Some(("bazel", vec!["clean"])),
         // These ecosystems don't have a clean command — we remove dirs directly
         _ => None,
     }

@@ -38,6 +38,24 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
                 kind.label()
             )
         }
+        ProjectKind::Php => Ok(vec![step("php", &["-S", "localhost:8000"])]),
+        ProjectKind::Dart { flutter: true } => Ok(vec![step("flutter", &["run"])]),
+        ProjectKind::Dart { flutter: false } => Ok(vec![step("dart", &["run"])]),
+        ProjectKind::Sbt => Ok(vec![step("sbt", &["run"])]),
+        ProjectKind::Haskell { stack: true } => Ok(vec![step("stack", &["run"])]),
+        ProjectKind::Haskell { stack: false } => Ok(vec![step("cabal", &["run"])]),
+        ProjectKind::Clojure { lein: true } => Ok(vec![step("lein", &["run"])]),
+        ProjectKind::Clojure { lein: false } => Ok(vec![step("clj", &["-M", "-m", "main"])]),
+        ProjectKind::Rebar => Ok(vec![step("rebar3", &["shell"])]),
+        ProjectKind::Dune => Ok(vec![step("dune", &["exec", "."])]),
+        ProjectKind::Perl => Ok(vec![step("perl", &["app.pl"])]),
+        ProjectKind::Julia => Ok(vec![step("julia", &["--project", "src/main.jl"])]),
+        ProjectKind::Nim => Ok(vec![step("nimble", &["run"])]),
+        ProjectKind::Crystal => Ok(vec![step("crystal", &["run", "src/main.cr"])]),
+        ProjectKind::Vlang => Ok(vec![step("v", &["run", "."])]),
+        ProjectKind::Gleam => Ok(vec![step("gleam", &["run"])]),
+        ProjectKind::Lua => Ok(vec![step("lua", &["init.lua"])]),
+        ProjectKind::Bazel => Ok(vec![step("bazel", &["run", "//:main"])]),
     }
 }
 

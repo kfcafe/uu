@@ -46,6 +46,21 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ]),
         ProjectKind::Zig => Ok(vec![step("zig", &["build"])]),
         ProjectKind::Make => Ok(vec![step("make", &[])]),
+        ProjectKind::Dart { .. } => Ok(vec![step("dart", &["analyze"])]),
+        ProjectKind::Sbt => Ok(vec![step("sbt", &["compile"])]),
+        ProjectKind::Haskell { stack: true } => Ok(vec![step("stack", &["build", "--fast"])]),
+        ProjectKind::Haskell { stack: false } => Ok(vec![step("cabal", &["build"])]),
+        ProjectKind::Rebar => Ok(vec![step("rebar3", &["compile"])]),
+        ProjectKind::Dune => Ok(vec![step("dune", &["build"])]),
+        ProjectKind::Nim => Ok(vec![step("nimble", &["check"])]),
+        ProjectKind::Crystal => Ok(vec![step("crystal", &["build", "--no-codegen"])]),
+        ProjectKind::Vlang => Ok(vec![step("v", &["."])]),
+        ProjectKind::Gleam => Ok(vec![step("gleam", &["check"])]),
+        ProjectKind::Bazel => Ok(vec![step("bazel", &["build", "//..."])]),
+        ProjectKind::Php | ProjectKind::Clojure { .. } | ProjectKind::Perl
+        | ProjectKind::Julia | ProjectKind::Lua => {
+            bail!("{} has no built-in typecheck", kind.label())
+        }
     }
 }
 

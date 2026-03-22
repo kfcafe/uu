@@ -64,12 +64,7 @@ pub(super) fn print_type(key: &str, t: &TypeDef) {
         println!("  {}:", dim("fields"));
         for f in &t.fields {
             let opt = if f.optional { " (optional)" } else { "" };
-            println!(
-                "    {}: {}{}",
-                bold(&f.name),
-                f.type_name,
-                dim(opt)
-            );
+            println!("    {}: {}{}", bold(&f.name), f.type_name, dim(opt));
         }
     }
 
@@ -81,19 +76,11 @@ pub(super) fn print_type(key: &str, t: &TypeDef) {
     }
 
     if !t.methods.is_empty() {
-        println!(
-            "  {} {}",
-            dim("methods:"),
-            t.methods.join(", ")
-        );
+        println!("  {} {}", dim("methods:"), t.methods.join(", "));
     }
 
     if !t.implements.is_empty() {
-        println!(
-            "  {} {}",
-            dim("implements:"),
-            t.implements.join(", ")
-        );
+        println!("  {} {}", dim("implements:"), t.implements.join(", "));
     }
     println!();
 }
@@ -106,12 +93,7 @@ pub(super) fn print_function(key: &str, f: &Function) {
         String::new()
     };
 
-    println!(
-        "{}{} {}",
-        green(&format!("fn {key}")),
-        async_label,
-        vis,
-    );
+    println!("{}{} {}", green(&format!("fn {key}")), async_label, vis,);
     if !f.source.is_empty() {
         println!("  {} {}", dim("source:"), f.source);
     }
@@ -159,18 +141,10 @@ pub(super) fn print_module(key: &str, m: &Module) {
         println!("  {} {}", dim("file:"), m.file);
     }
     if !m.exports.is_empty() {
-        println!(
-            "  {} {}",
-            dim("exports:"),
-            m.exports.join(", ")
-        );
+        println!("  {} {}", dim("exports:"), m.exports.join(", "));
     }
     if !m.imports.is_empty() {
-        println!(
-            "  {} {}",
-            dim("imports:"),
-            m.imports.join(", ")
-        );
+        println!("  {} {}", dim("imports:"), m.imports.join(", "));
     }
     println!();
 }
@@ -192,12 +166,7 @@ pub(super) fn print_model(key: &str, m: &DataModel) {
         println!("  {}:", dim("fields"));
         for f in &m.fields {
             let opt = if f.optional { " (optional)" } else { "" };
-            println!(
-                "    {}: {}{}",
-                bold(&f.name),
-                f.type_name,
-                dim(opt)
-            );
+            println!("    {}: {}{}", bold(&f.name), f.type_name, dim(opt));
         }
     }
     if !m.relations.is_empty() {
@@ -227,9 +196,7 @@ pub(super) fn find_references(name: &str, manifest: &Manifest) -> Vec<String> {
 
     // Functions whose signatures mention this name
     for (key, func) in &manifest.functions {
-        if key.to_lowercase() != name_lower
-            && func.signature.to_lowercase().contains(&name_lower)
-        {
+        if key.to_lowercase() != name_lower && func.signature.to_lowercase().contains(&name_lower) {
             refs.push(format!("fn {key}"));
         }
     }
@@ -394,10 +361,7 @@ pub(super) fn to_markdown(manifest: &Manifest) -> String {
                 out.push_str("| Field | Type | Optional |\n|-------|------|----------|\n");
                 for f in &t.fields {
                     let opt = if f.optional { "✓" } else { "" };
-                    out.push_str(&format!(
-                        "| `{}` | `{}` | {} |\n",
-                        f.name, f.type_name, opt
-                    ));
+                    out.push_str(&format!("| `{}` | `{}` | {} |\n", f.name, f.type_name, opt));
                 }
                 out.push('\n');
             }
@@ -425,10 +389,7 @@ pub(super) fn to_markdown(manifest: &Manifest) -> String {
             }
 
             if !t.implements.is_empty() {
-                out.push_str(&format!(
-                    "**Implements:** {}\n\n",
-                    t.implements.join(", ")
-                ));
+                out.push_str(&format!("**Implements:** {}\n\n", t.implements.join(", ")));
             }
 
             out.push_str("---\n\n");
@@ -438,7 +399,9 @@ pub(super) fn to_markdown(manifest: &Manifest) -> String {
     // Functions
     if !manifest.functions.is_empty() {
         out.push_str("## Functions\n\n");
-        out.push_str("| Name | Signature | Source | Async |\n|------|-----------|--------|-------|\n");
+        out.push_str(
+            "| Name | Signature | Source | Async |\n|------|-----------|--------|-------|\n",
+        );
         for (name, f) in &manifest.functions {
             let async_mark = if f.is_async { "✓" } else { "" };
             let sig = if f.signature.is_empty() {
@@ -503,10 +466,7 @@ pub(super) fn to_markdown(manifest: &Manifest) -> String {
                 out.push_str("| Field | Type | Optional |\n|-------|------|----------|\n");
                 for f in &m.fields {
                     let opt = if f.optional { "✓" } else { "" };
-                    out.push_str(&format!(
-                        "| `{}` | `{}` | {} |\n",
-                        f.name, f.type_name, opt
-                    ));
+                    out.push_str(&format!("| `{}` | `{}` | {} |\n", f.name, f.type_name, opt));
                 }
                 out.push('\n');
             }

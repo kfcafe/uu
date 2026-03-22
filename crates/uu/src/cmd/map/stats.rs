@@ -166,11 +166,7 @@ pub(crate) fn execute(args: CommonArgs) -> Result<()> {
             if implementors.is_empty() {
                 println!("  {name} {}", dim("(no implementors)"));
             } else {
-                println!(
-                    "  {name} {} {}",
-                    dim("→"),
-                    implementors.join(", ")
-                );
+                println!("  {name} {} {}", dim("→"), implementors.join(", "));
             }
         }
         println!();
@@ -218,5 +214,3 @@ fn count_visibility_fns(manifest: &uu_manifest::Manifest) -> (usize, usize, usiz
     }
     (pub_count, priv_count, int_count)
 }
-
-

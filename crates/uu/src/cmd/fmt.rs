@@ -70,6 +70,21 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ),
         ProjectKind::Zig => Ok(vec![step("zig", &["fmt", "."])]),
         ProjectKind::Make => bail!("Make has no built-in formatter"),
+        ProjectKind::Dart { .. } => Ok(vec![step("dart", &["format", "."])]),
+        ProjectKind::Sbt => Ok(vec![step("sbt", &["scalafmtAll"])]),
+        ProjectKind::Dune => Ok(vec![step("dune", &["fmt"])]),
+        ProjectKind::Crystal => Ok(vec![step("crystal", &["tool", "format", "."])]),
+        ProjectKind::Vlang => Ok(vec![step("v", &["fmt", "."])]),
+        ProjectKind::Gleam => Ok(vec![step("gleam", &["format"])]),
+        ProjectKind::Php => bail!("PHP has no built-in formatter\n\n  try: vendor/bin/php-cs-fixer fix"),
+        ProjectKind::Haskell { .. } => bail!("Haskell has no built-in formatter\n\n  try: ormolu -i **/*.hs"),
+        ProjectKind::Clojure { .. } => bail!("Clojure has no built-in formatter\n\n  try: lein cljfmt fix"),
+        ProjectKind::Rebar => bail!("Erlang has no built-in formatter\n\n  try: rebar3 fmt"),
+        ProjectKind::Perl => bail!("Perl has no built-in formatter\n\n  try: perltidy -b *.pl"),
+        ProjectKind::Julia => bail!("Julia has no built-in formatter\n\n  try: using JuliaFormatter; format(\".\")"),
+        ProjectKind::Nim => bail!("Nim has no built-in formatter\n\n  try: nimpretty *.nim"),
+        ProjectKind::Lua => bail!("Lua has no built-in formatter\n\n  try: stylua ."),
+        ProjectKind::Bazel => Ok(vec![step("buildifier", &["."])]),
     }
 }
 

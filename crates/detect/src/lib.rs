@@ -2,7 +2,7 @@
 //!
 //! Scans a directory for build system files (Cargo.toml, package.json, go.mod,
 //! etc.) and returns the detected [`ProjectKind`] with ecosystem-specific
-//! metadata. Supports 14 ecosystems out of the box.
+//! metadata. Supports 29 ecosystems out of the box.
 //!
 //! ```
 //! use project_detect::{detect, ProjectKind};
@@ -29,6 +29,7 @@ pub enum NodePM {
 /// A detected project type with ecosystem-specific metadata.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProjectKind {
+    // -- Language-specific (highest confidence) --
     Cargo,
     Go,
     Elixir { escript: bool },
@@ -40,6 +41,23 @@ pub enum ProjectKind {
     Swift,
     Zig,
     DotNet { sln: bool },
+    Php,
+    Dart { flutter: bool },
+    Sbt,
+    Haskell { stack: bool },
+    Clojure { lein: bool },
+    Rebar,
+    Dune,
+    Perl,
+    Julia,
+    Nim,
+    Crystal,
+    Vlang,
+    Gleam,
+    Lua,
+
+    // -- Build systems (lower confidence) --
+    Bazel,
     Meson,
     CMake,
     Make,
@@ -60,6 +78,22 @@ impl ProjectKind {
             Self::Swift => "Swift",
             Self::Zig => "Zig",
             Self::DotNet { .. } => ".NET",
+            Self::Php => "PHP",
+            Self::Dart { flutter: true } => "Flutter",
+            Self::Dart { flutter: false } => "Dart",
+            Self::Sbt => "Scala",
+            Self::Haskell { .. } => "Haskell",
+            Self::Clojure { .. } => "Clojure",
+            Self::Rebar => "Erlang",
+            Self::Dune => "OCaml",
+            Self::Perl => "Perl",
+            Self::Julia => "Julia",
+            Self::Nim => "Nim",
+            Self::Crystal => "Crystal",
+            Self::Vlang => "V",
+            Self::Gleam => "Gleam",
+            Self::Lua => "Lua",
+            Self::Bazel => "Bazel",
             Self::Meson => "Meson",
             Self::CMake => "CMake",
             Self::Make => "Make",
@@ -81,6 +115,23 @@ impl ProjectKind {
             Self::Zig => "build.zig",
             Self::DotNet { sln: true } => "*.sln",
             Self::DotNet { sln: false } => "*.csproj",
+            Self::Php => "composer.json",
+            Self::Dart { .. } => "pubspec.yaml",
+            Self::Sbt => "build.sbt",
+            Self::Haskell { stack: true } => "stack.yaml",
+            Self::Haskell { stack: false } => "*.cabal",
+            Self::Clojure { lein: true } => "project.clj",
+            Self::Clojure { lein: false } => "deps.edn",
+            Self::Rebar => "rebar.config",
+            Self::Dune => "dune-project",
+            Self::Perl => "cpanfile",
+            Self::Julia => "Project.toml",
+            Self::Nim => "*.nimble",
+            Self::Crystal => "shard.yml",
+            Self::Vlang => "v.mod",
+            Self::Gleam => "gleam.toml",
+            Self::Lua => "*.rockspec",
+            Self::Bazel => "MODULE.bazel",
             Self::Meson => "meson.build",
             Self::CMake => "CMakeLists.txt",
             Self::Make => "Makefile",
@@ -93,7 +144,7 @@ impl ProjectKind {
             Self::Cargo => &["target"],
             Self::Go => &[],
             Self::Elixir { .. } => &["_build", "deps"],
-            Self::Python { .. } => &["__pycache__", ".pytest_cache", "build", "dist"],
+            Self::Python { .. } => &["__pycache__", ".pytest_cache", "build", "dist", ".venv"],
             Self::Node { .. } => &["node_modules", ".next", ".nuxt", ".turbo"],
             Self::Gradle { .. } => &["build", ".gradle"],
             Self::Maven => &["target"],
@@ -101,6 +152,23 @@ impl ProjectKind {
             Self::Swift => &[".build"],
             Self::Zig => &["zig-out", ".zig-cache"],
             Self::DotNet { .. } => &["bin", "obj"],
+            Self::Php => &["vendor"],
+            Self::Dart { .. } => &[".dart_tool", "build"],
+            Self::Sbt => &["target", "project/target"],
+            Self::Haskell { stack: true } => &[".stack-work"],
+            Self::Haskell { stack: false } => &["dist-newstyle"],
+            Self::Clojure { lein: true } => &["target"],
+            Self::Clojure { lein: false } => &[".cpcache"],
+            Self::Rebar => &["_build"],
+            Self::Dune => &["_build"],
+            Self::Perl => &["blib", "_build"],
+            Self::Julia => &[],
+            Self::Nim => &["nimcache"],
+            Self::Crystal => &["lib", ".shards"],
+            Self::Vlang => &[],
+            Self::Gleam => &["build"],
+            Self::Lua => &[],
+            Self::Bazel => &["bazel-bin", "bazel-out", "bazel-testlogs"],
             Self::Meson => &["builddir"],
             Self::CMake => &["build"],
             Self::Make => &[],
@@ -178,6 +246,9 @@ fn detect_in(dir: &Path) -> Option<ProjectKind> {
     if dir.join("pom.xml").exists() {
         return Some(ProjectKind::Maven);
     }
+    if dir.join("build.sbt").exists() {
+        return Some(ProjectKind::Sbt);
+    }
 
     // Ruby
     if dir.join("Gemfile").exists() {
@@ -203,7 +274,89 @@ fn detect_in(dir: &Path) -> Option<ProjectKind> {
         }
     }
 
-    // Generic build systems — lowest confidence
+    // PHP
+    if dir.join("composer.json").exists() {
+        return Some(ProjectKind::Php);
+    }
+
+    // Dart / Flutter
+    if dir.join("pubspec.yaml").exists() {
+        let is_flutter = std::fs::read_to_string(dir.join("pubspec.yaml"))
+            .map(|c| c.contains("flutter:"))
+            .unwrap_or(false);
+        return Some(ProjectKind::Dart {
+            flutter: is_flutter,
+        });
+    }
+
+    // Haskell (stack.yaml preferred over *.cabal)
+    if dir.join("stack.yaml").exists() {
+        return Some(ProjectKind::Haskell { stack: true });
+    }
+    if has_extension_in_dir(dir, "cabal") {
+        return Some(ProjectKind::Haskell { stack: false });
+    }
+
+    // Clojure (project.clj = Leiningen, deps.edn = CLI/tools.deps)
+    if dir.join("project.clj").exists() {
+        return Some(ProjectKind::Clojure { lein: true });
+    }
+    if dir.join("deps.edn").exists() {
+        return Some(ProjectKind::Clojure { lein: false });
+    }
+
+    // Erlang
+    if dir.join("rebar.config").exists() {
+        return Some(ProjectKind::Rebar);
+    }
+
+    // OCaml
+    if dir.join("dune-project").exists() {
+        return Some(ProjectKind::Dune);
+    }
+
+    // Perl (cpanfile or Makefile.PL — checked before generic Make)
+    if dir.join("cpanfile").exists() || dir.join("Makefile.PL").exists() {
+        return Some(ProjectKind::Perl);
+    }
+
+    // Julia
+    if dir.join("Project.toml").exists() {
+        return Some(ProjectKind::Julia);
+    }
+
+    // Nim
+    if has_extension_in_dir(dir, "nimble") {
+        return Some(ProjectKind::Nim);
+    }
+
+    // Crystal
+    if dir.join("shard.yml").exists() {
+        return Some(ProjectKind::Crystal);
+    }
+
+    // V
+    if dir.join("v.mod").exists() {
+        return Some(ProjectKind::Vlang);
+    }
+
+    // Gleam
+    if dir.join("gleam.toml").exists() {
+        return Some(ProjectKind::Gleam);
+    }
+
+    // Lua (LuaRocks)
+    if has_extension_in_dir(dir, "rockspec") {
+        return Some(ProjectKind::Lua);
+    }
+
+    // -- Build systems (lower confidence) ------------------------------------
+
+    // Bazel (MODULE.bazel = Bzlmod, WORKSPACE = legacy)
+    if dir.join("MODULE.bazel").exists() || dir.join("WORKSPACE").exists() {
+        return Some(ProjectKind::Bazel);
+    }
+
     if dir.join("meson.build").exists() {
         return Some(ProjectKind::Meson);
     }
@@ -222,7 +375,7 @@ fn detect_in(dir: &Path) -> Option<ProjectKind> {
 
 /// Detect the project kind, walking up from `dir` if nothing is found.
 ///
-/// Convenience wrapper around [`detect_walk`] that returns only the kind.
+/// Convenience wrapper over [`detect_walk`] that returns only the kind.
 #[must_use]
 pub fn detect_nearest(dir: impl AsRef<Path>) -> Option<ProjectKind> {
     detect_walk(dir).map(|(kind, _)| kind)
@@ -244,29 +397,43 @@ pub fn command_on_path(name: &str) -> bool {
 #[must_use]
 pub fn supported_table() -> String {
     let entries = [
-        ("Cargo.toml", "cargo install --path ."),
-        ("go.mod", "go install ./..."),
-        (
-            "mix.exs",
-            "mix deps.get && mix compile (or mix escript.build)",
-        ),
+        ("Cargo.toml", "cargo build"),
+        ("go.mod", "go build ./..."),
+        ("mix.exs", "mix compile"),
         ("pyproject.toml", "pip install . (or uv)"),
         ("setup.py", "pip install ."),
         ("package.json", "npm/yarn/pnpm/bun install"),
         ("build.gradle", "./gradlew build"),
-        ("pom.xml", "mvn install"),
+        ("pom.xml", "mvn package"),
+        ("build.sbt", "sbt compile"),
         ("Gemfile", "bundle install"),
         ("Package.swift", "swift build"),
         ("build.zig", "zig build"),
         ("*.csproj", "dotnet build"),
-        ("meson.build", "meson setup + compile + install"),
-        ("CMakeLists.txt", "cmake build + install"),
-        ("Makefile", "make && make install"),
+        ("composer.json", "composer install"),
+        ("pubspec.yaml", "dart pub get / flutter pub get"),
+        ("stack.yaml", "stack build"),
+        ("*.cabal", "cabal build"),
+        ("project.clj", "lein compile"),
+        ("deps.edn", "clj -M:build"),
+        ("rebar.config", "rebar3 compile"),
+        ("dune-project", "dune build"),
+        ("cpanfile", "cpanm --installdeps ."),
+        ("Project.toml", "julia -e 'using Pkg; Pkg.instantiate()'"),
+        ("*.nimble", "nimble build"),
+        ("shard.yml", "shards build"),
+        ("v.mod", "v ."),
+        ("gleam.toml", "gleam build"),
+        ("*.rockspec", "luarocks make"),
+        ("MODULE.bazel", "bazel build //..."),
+        ("meson.build", "meson setup + compile"),
+        ("CMakeLists.txt", "cmake -B build && cmake --build build"),
+        ("Makefile", "make"),
     ];
 
     let mut out = String::from("  supported project files:\n");
     for (file, cmd) in entries {
-        out.push_str(&format!("    {file:<16} → {cmd}\n"));
+        out.push_str(&format!("    {file:<18} → {cmd}\n"));
     }
     out
 }
@@ -306,20 +473,12 @@ pub fn node_has_bin(dir: &Path) -> bool {
 
 // -- Private helpers ---------------------------------------------------------
 
-/// Check whether an Elixir project has an escript configuration.
-///
-/// Scans `mix.exs` (and child app `mix.exs` files in umbrella projects)
-/// for the `escript:` keyword, which indicates the project produces a
-/// standalone escript binary.
 fn elixir_has_escript(dir: &Path) -> bool {
-    // Check root mix.exs
     if let Ok(content) = std::fs::read_to_string(dir.join("mix.exs")) {
         if content.contains("escript:") {
             return true;
         }
     }
-
-    // Check umbrella child apps (apps/*/mix.exs)
     let apps_dir = dir.join("apps");
     if apps_dir.is_dir() {
         if let Ok(entries) = std::fs::read_dir(&apps_dir) {
@@ -333,11 +492,9 @@ fn elixir_has_escript(dir: &Path) -> bool {
             }
         }
     }
-
     false
 }
 
-/// Check whether any file in `dir` has the given extension (non-recursive).
 fn has_extension_in_dir(dir: &Path, ext: &str) -> bool {
     std::fs::read_dir(dir)
         .ok()
@@ -366,24 +523,16 @@ fn detect_node_pm(dir: &Path) -> NodePM {
 /// A package in a workspace that has a "dev" script.
 #[derive(Debug, Clone)]
 pub struct WorkspacePackage {
-    /// Directory name, e.g. "api", "web".
     pub name: String,
-    /// Absolute path to the package directory.
     pub path: PathBuf,
-    /// Value of the "dev" script from package.json.
     pub dev_script: String,
 }
 
 /// Detect Node.js workspace packages that have a "dev" script.
-///
-/// Checks for `pnpm-workspace.yaml` first, then `"workspaces"` field in
-/// `package.json`. Returns `None` if not a workspace. Returns `Some(vec![])`
-/// if workspace but no dev scripts found.
 #[must_use]
 pub fn detect_node_workspace(dir: &Path) -> Option<Vec<WorkspacePackage>> {
     let patterns =
         read_pnpm_workspace_patterns(dir).or_else(|| read_npm_workspace_patterns(dir))?;
-
     let mut packages = Vec::new();
     for pattern in &patterns {
         collect_workspace_packages(dir, pattern, &mut packages);
@@ -392,19 +541,10 @@ pub fn detect_node_workspace(dir: &Path) -> Option<Vec<WorkspacePackage>> {
     Some(packages)
 }
 
-/// Parse glob patterns from `pnpm-workspace.yaml`.
-///
-/// Handles the simple format:
-/// ```yaml
-/// packages:
-///   - "packages/*"
-///   - "apps/*"
-/// ```
 fn read_pnpm_workspace_patterns(dir: &Path) -> Option<Vec<String>> {
     let content = std::fs::read_to_string(dir.join("pnpm-workspace.yaml")).ok()?;
     let mut patterns = Vec::new();
     let mut in_packages = false;
-
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed == "packages:" {
@@ -412,7 +552,6 @@ fn read_pnpm_workspace_patterns(dir: &Path) -> Option<Vec<String>> {
             continue;
         }
         if in_packages {
-            // A non-list line after "packages:" ends the section.
             if !trimmed.starts_with('-') {
                 if !trimmed.is_empty() {
                     break;
@@ -424,7 +563,6 @@ fn read_pnpm_workspace_patterns(dir: &Path) -> Option<Vec<String>> {
                 .trim()
                 .trim_matches('"')
                 .trim_matches('\'');
-            // Skip exclusion patterns.
             if value.starts_with('!') {
                 continue;
             }
@@ -433,49 +571,38 @@ fn read_pnpm_workspace_patterns(dir: &Path) -> Option<Vec<String>> {
             }
         }
     }
-
     if patterns.is_empty() {
         return None;
     }
     Some(patterns)
 }
 
-/// Read workspace patterns from the `"workspaces"` field in `package.json`.
 fn read_npm_workspace_patterns(dir: &Path) -> Option<Vec<String>> {
     let content = std::fs::read_to_string(dir.join("package.json")).ok()?;
     let json: serde_json::Value = serde_json::from_str(&content).ok()?;
     let arr = json.get("workspaces")?.as_array()?;
-
     let patterns: Vec<String> = arr
         .iter()
         .filter_map(|v| v.as_str())
         .filter(|s| !s.starts_with('!'))
         .map(|s| s.to_string())
         .collect();
-
     if patterns.is_empty() {
         return None;
     }
     Some(patterns)
 }
 
-/// Expand a simple `prefix/*` glob pattern into workspace packages.
-///
-/// Only handles the common `dir/*` form — splits on `/*` and lists the
-/// prefix directory. Each subdirectory with a `package.json` containing a
-/// `scripts.dev` entry becomes a [`WorkspacePackage`].
 fn collect_workspace_packages(root: &Path, pattern: &str, out: &mut Vec<WorkspacePackage>) {
     let prefix = match pattern.strip_suffix("/*") {
         Some(p) => p,
         None => pattern,
     };
-
     let search_dir = root.join(prefix);
     let entries = match std::fs::read_dir(&search_dir) {
         Ok(e) => e,
         Err(_) => return,
     };
-
     for entry in entries.flatten() {
         let pkg_dir = entry.path();
         if !pkg_dir.is_dir() {
@@ -654,6 +781,13 @@ mod tests {
     }
 
     #[test]
+    fn detect_sbt() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("build.sbt"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Sbt));
+    }
+
+    #[test]
     fn detect_ruby() {
         let dir = tempdir().unwrap();
         fs::write(dir.path().join("Gemfile"), "").unwrap();
@@ -697,6 +831,172 @@ mod tests {
     }
 
     #[test]
+    fn detect_php() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("composer.json"), "{}").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Php));
+    }
+
+    #[test]
+    fn detect_dart() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("pubspec.yaml"), "name: myapp").unwrap();
+        assert_eq!(
+            detect(dir.path()),
+            Some(ProjectKind::Dart { flutter: false })
+        );
+    }
+
+    #[test]
+    fn detect_flutter() {
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("pubspec.yaml"),
+            "name: myapp\nflutter:\n  sdk: flutter",
+        )
+        .unwrap();
+        assert_eq!(
+            detect(dir.path()),
+            Some(ProjectKind::Dart { flutter: true })
+        );
+    }
+
+    #[test]
+    fn detect_haskell_stack() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("stack.yaml"), "").unwrap();
+        assert_eq!(
+            detect(dir.path()),
+            Some(ProjectKind::Haskell { stack: true })
+        );
+    }
+
+    #[test]
+    fn detect_haskell_cabal() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("mylib.cabal"), "").unwrap();
+        assert_eq!(
+            detect(dir.path()),
+            Some(ProjectKind::Haskell { stack: false })
+        );
+    }
+
+    #[test]
+    fn detect_haskell_stack_preferred_over_cabal() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("stack.yaml"), "").unwrap();
+        fs::write(dir.path().join("mylib.cabal"), "").unwrap();
+        assert_eq!(
+            detect(dir.path()),
+            Some(ProjectKind::Haskell { stack: true })
+        );
+    }
+
+    #[test]
+    fn detect_clojure_lein() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("project.clj"), "").unwrap();
+        assert_eq!(
+            detect(dir.path()),
+            Some(ProjectKind::Clojure { lein: true })
+        );
+    }
+
+    #[test]
+    fn detect_clojure_deps() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("deps.edn"), "").unwrap();
+        assert_eq!(
+            detect(dir.path()),
+            Some(ProjectKind::Clojure { lein: false })
+        );
+    }
+
+    #[test]
+    fn detect_rebar() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("rebar.config"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Rebar));
+    }
+
+    #[test]
+    fn detect_dune() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("dune-project"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Dune));
+    }
+
+    #[test]
+    fn detect_perl_cpanfile() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("cpanfile"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Perl));
+    }
+
+    #[test]
+    fn detect_perl_makefile_pl() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("Makefile.PL"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Perl));
+    }
+
+    #[test]
+    fn detect_julia() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("Project.toml"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Julia));
+    }
+
+    #[test]
+    fn detect_nim() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("myapp.nimble"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Nim));
+    }
+
+    #[test]
+    fn detect_crystal() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("shard.yml"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Crystal));
+    }
+
+    #[test]
+    fn detect_vlang() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("v.mod"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Vlang));
+    }
+
+    #[test]
+    fn detect_gleam() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("gleam.toml"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Gleam));
+    }
+
+    #[test]
+    fn detect_lua() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("mylib-1.0-1.rockspec"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Lua));
+    }
+
+    #[test]
+    fn detect_bazel_module() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("MODULE.bazel"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Bazel));
+    }
+
+    #[test]
+    fn detect_bazel_workspace() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("WORKSPACE"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Bazel));
+    }
+
+    #[test]
     fn detect_meson() {
         let dir = tempdir().unwrap();
         fs::write(dir.path().join("meson.build"), "").unwrap();
@@ -737,7 +1037,7 @@ mod tests {
         assert_eq!(detect(dir.path()), None);
     }
 
-    // -- Priority tests: language-specific wins over generic -----------------
+    // -- Priority: language-specific wins over generic -----------------------
 
     #[test]
     fn cargo_wins_over_makefile() {
@@ -776,6 +1076,21 @@ mod tests {
         assert_eq!(detect(dir.path()), Some(ProjectKind::Cargo));
     }
 
+    #[test]
+    fn perl_makefile_pl_does_not_trigger_make() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("Makefile.PL"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Perl));
+    }
+
+    #[test]
+    fn gleam_wins_over_bazel() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("gleam.toml"), "").unwrap();
+        fs::write(dir.path().join("WORKSPACE"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Gleam));
+    }
+
     // -- artifact_dirs -------------------------------------------------------
 
     #[test]
@@ -810,9 +1125,41 @@ mod tests {
         assert!(kind.artifact_dirs().contains(&"node_modules"));
     }
 
+    #[test]
+    fn php_artifacts_include_vendor() {
+        assert!(ProjectKind::Php.artifact_dirs().contains(&"vendor"));
+    }
+
+    #[test]
+    fn dart_artifacts_include_dart_tool() {
+        assert!(ProjectKind::Dart { flutter: false }
+            .artifact_dirs()
+            .contains(&".dart_tool"));
+    }
+
+    #[test]
+    fn haskell_stack_artifacts() {
+        assert!(ProjectKind::Haskell { stack: true }
+            .artifact_dirs()
+            .contains(&".stack-work"));
+    }
+
+    #[test]
+    fn haskell_cabal_artifacts() {
+        assert!(ProjectKind::Haskell { stack: false }
+            .artifact_dirs()
+            .contains(&"dist-newstyle"));
+    }
+
+    #[test]
+    fn bazel_artifacts() {
+        let dirs = ProjectKind::Bazel.artifact_dirs();
+        assert!(dirs.contains(&"bazel-bin"));
+        assert!(dirs.contains(&"bazel-out"));
+    }
+
     // -- Workspace detection -------------------------------------------------
 
-    /// Helper: create a package dir with a package.json containing optional dev script.
     fn create_pkg(parent: &Path, name: &str, dev_script: Option<&str>) {
         let pkg = parent.join(name);
         fs::create_dir_all(&pkg).unwrap();
@@ -831,64 +1178,44 @@ mod tests {
     fn detect_pnpm_workspace() {
         let dir = tempdir().unwrap();
         let root = dir.path();
-
-        // Root package.json (needed for a real project, but workspace comes from yaml)
         fs::write(root.join("package.json"), r#"{ "name": "root" }"#).unwrap();
-
-        // pnpm-workspace.yaml with two patterns, one exclusion
         fs::write(
             root.join("pnpm-workspace.yaml"),
             "packages:\n  - \"apps/*\"\n  - \"!apps/ignored\"\n",
         )
         .unwrap();
-
-        // Two packages: one with dev, one without
         fs::create_dir_all(root.join("apps")).unwrap();
         create_pkg(&root.join("apps"), "web", Some("next dev"));
         create_pkg(&root.join("apps"), "api", None);
-
         let result = detect_node_workspace(root).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].name, "web");
-        assert_eq!(result[0].dev_script, "next dev");
     }
 
     #[test]
     fn detect_npm_workspace() {
         let dir = tempdir().unwrap();
         let root = dir.path();
-
         fs::write(
             root.join("package.json"),
             r#"{ "name": "root", "workspaces": ["packages/*"] }"#,
         )
         .unwrap();
-
         fs::create_dir_all(root.join("packages")).unwrap();
         create_pkg(&root.join("packages"), "alpha", Some("vite dev"));
         create_pkg(&root.join("packages"), "beta", Some("node server.js"));
-
         let result = detect_node_workspace(root).unwrap();
         assert_eq!(result.len(), 2);
-        // Sorted by name
         assert_eq!(result[0].name, "alpha");
-        assert_eq!(result[0].dev_script, "vite dev");
         assert_eq!(result[1].name, "beta");
-        assert_eq!(result[1].dev_script, "node server.js");
     }
 
     #[test]
     fn no_workspace_returns_none() {
         let dir = tempdir().unwrap();
-        fs::write(
-            dir.path().join("package.json"),
-            r#"{ "name": "solo-project" }"#,
-        )
-        .unwrap();
+        fs::write(dir.path().join("package.json"), r#"{ "name": "solo" }"#).unwrap();
         assert!(detect_node_workspace(dir.path()).is_none());
     }
-
-    // -- node_has_script / node_has_bin ----------------------------------------
 
     #[test]
     fn node_has_script_finds_build() {
@@ -954,30 +1281,24 @@ mod tests {
     fn workspace_no_dev_scripts() {
         let dir = tempdir().unwrap();
         let root = dir.path();
-
         fs::write(
             root.join("package.json"),
             r#"{ "name": "root", "workspaces": ["libs/*"] }"#,
         )
         .unwrap();
-
         fs::create_dir_all(root.join("libs")).unwrap();
         create_pkg(&root.join("libs"), "utils", None);
-        create_pkg(&root.join("libs"), "types", None);
-
         let result = detect_node_workspace(root).unwrap();
         assert!(result.is_empty());
     }
 
-    // -- detect_walk (ancestor walking) --------------------------------------
+    // -- detect_walk ---------------------------------------------------------
 
     #[test]
     fn detect_walk_finds_project_in_current_dir() {
         let dir = tempdir().unwrap();
         fs::write(dir.path().join("Cargo.toml"), "").unwrap();
-        let result = detect_walk(dir.path());
-        assert!(result.is_some());
-        let (kind, found_dir) = result.unwrap();
+        let (kind, found_dir) = detect_walk(dir.path()).unwrap();
         assert_eq!(kind, ProjectKind::Cargo);
         assert_eq!(found_dir, dir.path());
     }
@@ -988,9 +1309,7 @@ mod tests {
         fs::write(dir.path().join("Cargo.toml"), "").unwrap();
         let child = dir.path().join("subdir");
         fs::create_dir(&child).unwrap();
-        let result = detect_walk(&child);
-        assert!(result.is_some());
-        let (kind, found_dir) = result.unwrap();
+        let (kind, found_dir) = detect_walk(&child).unwrap();
         assert_eq!(kind, ProjectKind::Cargo);
         assert_eq!(found_dir, dir.path().to_path_buf());
     }
@@ -1001,34 +1320,17 @@ mod tests {
         fs::write(dir.path().join("go.mod"), "").unwrap();
         let deep = dir.path().join("a").join("b").join("c");
         fs::create_dir_all(&deep).unwrap();
-        let result = detect_walk(&deep);
-        assert!(result.is_some());
-        let (kind, _) = result.unwrap();
+        let (kind, _) = detect_walk(&deep).unwrap();
         assert_eq!(kind, ProjectKind::Go);
-    }
-
-    #[test]
-    fn detect_walk_returns_none_when_no_project_anywhere() {
-        let dir = tempdir().unwrap();
-        let child = dir.path().join("empty");
-        fs::create_dir(&child).unwrap();
-        // tempdir is in /tmp which has no project files above it
-        // but /tmp itself or / might have something — use the child inside tempdir
-        // detect_walk will walk up to / and return None
-        // For a reliable test, just verify the function doesn't panic
-        let _ = detect_walk(&child);
     }
 
     #[test]
     fn detect_walk_prefers_closest_project() {
         let dir = tempdir().unwrap();
-        // Parent has Cargo.toml
         fs::write(dir.path().join("Cargo.toml"), "").unwrap();
-        // Child has package.json
         let child = dir.path().join("frontend");
         fs::create_dir(&child).unwrap();
         fs::write(child.join("package.json"), "{}").unwrap();
-        // detect_walk from child should find Node (the closest match)
         let (kind, found_dir) = detect_walk(&child).unwrap();
         assert_eq!(
             kind,

@@ -91,6 +91,27 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             step("zig", &["build", "test"]),
         ]),
         ProjectKind::Make => Ok(vec![step("make", &["test"])]),
+        ProjectKind::Php => Ok(vec![step("vendor/bin/phpunit", &[])]),
+        ProjectKind::Dart { .. } => Ok(vec![
+            step("dart", &["format", "--set-exit-if-changed", "."]),
+            step("dart", &["analyze"]),
+            step("dart", &["test"]),
+        ]),
+        ProjectKind::Sbt => Ok(vec![step("sbt", &["scalafmtCheckAll"]), step("sbt", &["test"])]),
+        ProjectKind::Haskell { stack: true } => Ok(vec![step("stack", &["build"]), step("stack", &["test"])]),
+        ProjectKind::Haskell { stack: false } => Ok(vec![step("cabal", &["build"]), step("cabal", &["test"])]),
+        ProjectKind::Clojure { lein: true } => Ok(vec![step("lein", &["test"])]),
+        ProjectKind::Clojure { lein: false } => Ok(vec![step("clj", &["-M:test"])]),
+        ProjectKind::Rebar => Ok(vec![step("rebar3", &["compile"]), step("rebar3", &["eunit"])]),
+        ProjectKind::Dune => Ok(vec![step("dune", &["build"]), step("dune", &["test"])]),
+        ProjectKind::Perl => Ok(vec![step("prove", &["-l"])]),
+        ProjectKind::Julia => Ok(vec![step("julia", &["--project", "-e", "using Pkg; Pkg.test()"])]),
+        ProjectKind::Nim => Ok(vec![step("nimble", &["test"])]),
+        ProjectKind::Crystal => Ok(vec![step("crystal", &["spec"])]),
+        ProjectKind::Vlang => Ok(vec![step("v", &["test", "."])]),
+        ProjectKind::Gleam => Ok(vec![step("gleam", &["test"])]),
+        ProjectKind::Lua => Ok(vec![step("luarocks", &["test"])]),
+        ProjectKind::Bazel => Ok(vec![step("bazel", &["test", "//..."])]),
     }
 }
 

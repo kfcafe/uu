@@ -45,7 +45,9 @@ pub(crate) fn execute(args: SearchArgs) -> Result<()> {
     if should_search(&category, "types") {
         for (key, t) in &manifest.types {
             if key.to_lowercase().contains(&term)
-                || t.fields.iter().any(|f| f.name.to_lowercase().contains(&term))
+                || t.fields
+                    .iter()
+                    .any(|f| f.name.to_lowercase().contains(&term))
                 || t.methods.iter().any(|m| m.to_lowercase().contains(&term))
                 || t.variants.iter().any(|v| v.to_lowercase().contains(&term))
             {
@@ -81,11 +83,13 @@ pub(crate) fn execute(args: SearchArgs) -> Result<()> {
     // Functions
     if should_search(&category, "functions") {
         for (key, f) in &manifest.functions {
-            if key.to_lowercase().contains(&term)
-                || f.signature.to_lowercase().contains(&term)
-            {
+            if key.to_lowercase().contains(&term) || f.signature.to_lowercase().contains(&term) {
                 let detail = if f.signature.is_empty() {
-                    if f.is_async { "async".to_string() } else { String::new() }
+                    if f.is_async {
+                        "async".to_string()
+                    } else {
+                        String::new()
+                    }
                 } else {
                     f.signature.clone()
                 };
@@ -152,7 +156,9 @@ pub(crate) fn execute(args: SearchArgs) -> Result<()> {
     if should_search(&category, "models") {
         for (key, m) in &manifest.models {
             if key.to_lowercase().contains(&term)
-                || m.fields.iter().any(|f| f.name.to_lowercase().contains(&term))
+                || m.fields
+                    .iter()
+                    .any(|f| f.name.to_lowercase().contains(&term))
             {
                 let detail = if m.orm.is_empty() {
                     format!("{} fields", m.fields.len())
@@ -196,11 +202,7 @@ pub(crate) fn execute(args: SearchArgs) -> Result<()> {
         std::process::exit(1);
     }
 
-    println!(
-        "Found {} matches for '{}':\n",
-        results.len(),
-        args.term
-    );
+    println!("Found {} matches for '{}':\n", results.len(), args.term);
 
     // Group by category
     let mut current_category = "";

@@ -39,6 +39,22 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ],
         ProjectKind::Zig => vec![step("zig", &["build"])],
         ProjectKind::Make => vec![step("make", &[])],
+        ProjectKind::Php | ProjectKind::Julia | ProjectKind::Lua => vec![],
+        ProjectKind::Dart { flutter: true } => vec![step("flutter", &["build"])],
+        ProjectKind::Dart { flutter: false } => vec![step("dart", &["compile", "exe", "bin/main.dart"])],
+        ProjectKind::Sbt => vec![step("sbt", &["compile"])],
+        ProjectKind::Haskell { stack: true } => vec![step("stack", &["build"])],
+        ProjectKind::Haskell { stack: false } => vec![step("cabal", &["build"])],
+        ProjectKind::Clojure { lein: true } => vec![step("lein", &["compile"])],
+        ProjectKind::Clojure { lein: false } => vec![step("clj", &["-T:build"])],
+        ProjectKind::Rebar => vec![step("rebar3", &["compile"])],
+        ProjectKind::Dune => vec![step("dune", &["build"])],
+        ProjectKind::Perl => vec![step("perl", &["Makefile.PL"]), step("make", &[])],
+        ProjectKind::Nim => vec![step("nimble", &["build"])],
+        ProjectKind::Crystal => vec![step("shards", &["build"])],
+        ProjectKind::Vlang => vec![step("v", &["."])],
+        ProjectKind::Gleam => vec![step("gleam", &["build"])],
+        ProjectKind::Bazel => vec![step("bazel", &["build", "//..."])],
     }
 }
 
