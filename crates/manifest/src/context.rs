@@ -2,8 +2,8 @@
 
 use anyhow::Result;
 use ignore::WalkBuilder;
+use project_detect::ProjectKind;
 use std::path::{Path, PathBuf};
-use uu_detect::ProjectKind;
 
 /// Runtime context passed to every adapter. Contains the project root,
 /// detected kind, a list of all source files, and pre-parsed config files.

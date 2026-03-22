@@ -3,7 +3,7 @@
 use std::env;
 
 use anyhow::{bail, Result};
-use uu_detect::{NodePM, ProjectKind};
+use project_detect::{NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -30,6 +30,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Ruby => Ok(vec![step("bundle", &["exec", "ruby", "app.rb"])]),
         ProjectKind::Swift => Ok(vec![step("swift", &["run"])]),
         ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["run"])]),
+        ProjectKind::Zig => Ok(vec![step("zig", &["build", "run"])]),
         ProjectKind::Make => Ok(vec![step("make", &["run"])]),
         ProjectKind::Meson | ProjectKind::CMake => {
             bail!(
@@ -104,6 +105,13 @@ mod tests {
         let s = steps(&ProjectKind::DotNet { sln: false }).unwrap();
         assert_eq!(s[0].program, "dotnet");
         assert_eq!(s[0].args, ["run"]);
+    }
+
+    #[test]
+    fn zig_run() {
+        let s = steps(&ProjectKind::Zig).unwrap();
+        assert_eq!(s[0].program, "zig");
+        assert_eq!(s[0].args, ["build", "run"]);
     }
 
     #[test]

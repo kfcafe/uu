@@ -1,7 +1,7 @@
 //! `uu build` — detect project type and build the project.
 
 use anyhow::Result;
-use uu_detect::{NodePM, ProjectKind};
+use project_detect::{NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -37,6 +37,7 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
             step("cmake", &["-B", "build"]),
             step("cmake", &["--build", "build"]),
         ],
+        ProjectKind::Zig => vec![step("zig", &["build"])],
         ProjectKind::Make => vec![step("make", &[])],
     }
 }
@@ -47,7 +48,7 @@ pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
     // Node projects may not have a build script — skip gracefully.
     if matches!(kind, ProjectKind::Node { .. }) {
         let dir = std::env::current_dir()?;
-        if !uu_detect::node_has_script(&dir, "build") {
+        if !project_detect::node_has_script(&dir, "build") {
             eprintln!(
                 "{} {} \x1b[2m({})\x1b[0m",
                 runner::style("36", "detected"),
@@ -70,7 +71,7 @@ pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uu_detect::NodePM;
+    use project_detect::NodePM;
 
     #[test]
     fn cargo_build() {
@@ -120,6 +121,13 @@ mod tests {
     fn dotnet_build() {
         let s = steps(&ProjectKind::DotNet { sln: false });
         assert_eq!(s[0].program, "dotnet");
+        assert_eq!(s[0].args, ["build"]);
+    }
+
+    #[test]
+    fn zig_build() {
+        let s = steps(&ProjectKind::Zig);
+        assert_eq!(s[0].program, "zig");
         assert_eq!(s[0].args, ["build"]);
     }
 

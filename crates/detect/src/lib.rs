@@ -1,7 +1,16 @@
-//! Project type detection for the `uu` universal utilities suite.
+//! Zero-config project type detection.
 //!
-//! Scans a directory for build system files (Cargo.toml, package.json, etc.)
-//! and returns the detected [`ProjectKind`] with ecosystem-specific metadata.
+//! Scans a directory for build system files (Cargo.toml, package.json, go.mod,
+//! etc.) and returns the detected [`ProjectKind`] with ecosystem-specific
+//! metadata. Supports 14 ecosystems out of the box.
+//!
+//! ```
+//! use project_detect::{detect, ProjectKind};
+//!
+//! if let Some(kind) = detect(".") {
+//!     println!("Detected: {} ({})", kind.label(), kind.detected_file());
+//! }
+//! ```
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -29,6 +38,7 @@ pub enum ProjectKind {
     Maven,
     Ruby,
     Swift,
+    Zig,
     DotNet { sln: bool },
     Meson,
     CMake,
@@ -48,6 +58,7 @@ impl ProjectKind {
             Self::Maven => "Maven",
             Self::Ruby => "Ruby",
             Self::Swift => "Swift",
+            Self::Zig => "Zig",
             Self::DotNet { .. } => ".NET",
             Self::Meson => "Meson",
             Self::CMake => "CMake",
@@ -67,6 +78,7 @@ impl ProjectKind {
             Self::Maven => "pom.xml",
             Self::Ruby => "Gemfile",
             Self::Swift => "Package.swift",
+            Self::Zig => "build.zig",
             Self::DotNet { sln: true } => "*.sln",
             Self::DotNet { sln: false } => "*.csproj",
             Self::Meson => "meson.build",
@@ -87,6 +99,7 @@ impl ProjectKind {
             Self::Maven => &["target"],
             Self::Ruby => &[".bundle"],
             Self::Swift => &[".build"],
+            Self::Zig => &["zig-out", ".zig-cache"],
             Self::DotNet { .. } => &["bin", "obj"],
             Self::Meson => &["builddir"],
             Self::CMake => &["build"],
@@ -126,7 +139,6 @@ pub fn detect_walk(dir: impl AsRef<Path>) -> Option<(ProjectKind, PathBuf)> {
 }
 
 fn detect_in(dir: &Path) -> Option<ProjectKind> {
-
     // Language-specific build files — highest confidence
     if dir.join("Cargo.toml").exists() {
         return Some(ProjectKind::Cargo);
@@ -175,6 +187,11 @@ fn detect_in(dir: &Path) -> Option<ProjectKind> {
     // Swift
     if dir.join("Package.swift").exists() {
         return Some(ProjectKind::Swift);
+    }
+
+    // Zig
+    if dir.join("build.zig").exists() {
+        return Some(ProjectKind::Zig);
     }
 
     // .NET
@@ -240,6 +257,7 @@ pub fn supported_table() -> String {
         ("pom.xml", "mvn install"),
         ("Gemfile", "bundle install"),
         ("Package.swift", "swift build"),
+        ("build.zig", "zig build"),
         ("*.csproj", "dotnet build"),
         ("meson.build", "meson setup + compile + install"),
         ("CMakeLists.txt", "cmake build + install"),
@@ -650,6 +668,13 @@ mod tests {
     }
 
     #[test]
+    fn detect_zig() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("build.zig"), "").unwrap();
+        assert_eq!(detect(dir.path()), Some(ProjectKind::Zig));
+    }
+
+    #[test]
     fn detect_dotnet_csproj() {
         let dir = tempdir().unwrap();
         fs::write(dir.path().join("MyApp.csproj"), "").unwrap();
@@ -768,6 +793,13 @@ mod tests {
         let kind = ProjectKind::DotNet { sln: false };
         assert!(kind.artifact_dirs().contains(&"bin"));
         assert!(kind.artifact_dirs().contains(&"obj"));
+    }
+
+    #[test]
+    fn zig_artifacts_include_zig_out() {
+        let dirs = ProjectKind::Zig.artifact_dirs();
+        assert!(dirs.contains(&"zig-out"));
+        assert!(dirs.contains(&".zig-cache"));
     }
 
     #[test]
@@ -998,7 +1030,12 @@ mod tests {
         fs::write(child.join("package.json"), "{}").unwrap();
         // detect_walk from child should find Node (the closest match)
         let (kind, found_dir) = detect_walk(&child).unwrap();
-        assert_eq!(kind, ProjectKind::Node { manager: NodePM::Npm });
+        assert_eq!(
+            kind,
+            ProjectKind::Node {
+                manager: NodePM::Npm
+            }
+        );
         assert_eq!(found_dir, child);
     }
 

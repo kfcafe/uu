@@ -300,7 +300,7 @@ mod tests {
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::DotNet { sln: false },
+            kind: project_detect::ProjectKind::DotNet { sln: false },
             files: vec![dir.path().join("MyApp.csproj")],
             package_json: None,
             cargo_toml: None,
@@ -320,7 +320,7 @@ mod tests {
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::DotNet { sln: false },
+            kind: project_detect::ProjectKind::DotNet { sln: false },
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -340,7 +340,7 @@ mod tests {
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::DotNet { sln: false },
+            kind: project_detect::ProjectKind::DotNet { sln: false },
             files: vec![dir.path().join("MyApp.csproj")],
             package_json: None,
             cargo_toml: None,
@@ -447,7 +447,7 @@ public class HealthController : ControllerBase
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::DotNet { sln: false },
+            kind: project_detect::ProjectKind::DotNet { sln: false },
             files: vec![
                 dir.path().join("App.csproj"),
                 controllers.join("ItemsController.cs"),

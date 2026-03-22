@@ -3,8 +3,8 @@
 use std::path::Path;
 
 use anyhow::Result;
+use project_detect::ProjectKind;
 use tree_sitter::{Node, Parser};
-use uu_detect::ProjectKind;
 
 use crate::adapters::{Adapter, AdapterLayer};
 use crate::context::ProjectContext;

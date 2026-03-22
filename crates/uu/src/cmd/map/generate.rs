@@ -25,7 +25,7 @@ pub(crate) struct GenerateArgs {
 pub(crate) fn execute(args: GenerateArgs) -> Result<()> {
     let root = super::resolve_root(args.path.as_ref())?;
 
-    let kind = uu_detect::detect(&root)
+    let kind = project_detect::detect(&root)
         .ok_or_else(|| anyhow::anyhow!("no recognized project found in {}", root.display()))?;
 
     if args.detect_only {

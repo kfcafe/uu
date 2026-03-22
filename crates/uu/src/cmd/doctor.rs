@@ -1,7 +1,7 @@
 //! `uu doctor` — show detected project and check required external tools.
 
 use anyhow::Result;
-use uu_detect::{command_on_path, detect_walk, supported_table, NodePM, ProjectKind};
+use project_detect::{command_on_path, detect_walk, supported_table, NodePM, ProjectKind};
 
 use crate::runner::style;
 
@@ -27,6 +27,7 @@ fn required_tools(kind: &ProjectKind) -> Vec<&'static str> {
         ProjectKind::DotNet { .. } => vec!["dotnet"],
         ProjectKind::Meson => vec!["meson", "ninja"],
         ProjectKind::CMake => vec!["cmake", "ctest"],
+        ProjectKind::Zig => vec!["zig"],
         ProjectKind::Make => vec!["make"],
     }
 }
@@ -122,6 +123,12 @@ mod tests {
     fn dotnet_tools() {
         let tools = required_tools(&ProjectKind::DotNet { sln: false });
         assert_eq!(tools, vec!["dotnet"]);
+    }
+
+    #[test]
+    fn zig_tools() {
+        let tools = required_tools(&ProjectKind::Zig);
+        assert_eq!(tools, vec!["zig"]);
     }
 
     #[test]

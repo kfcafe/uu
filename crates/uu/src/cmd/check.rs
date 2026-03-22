@@ -1,7 +1,7 @@
 //! `uu check` — detect project type and typecheck without running tests.
 
 use anyhow::{bail, Result};
-use uu_detect::{NodePM, ProjectKind};
+use project_detect::{NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -44,6 +44,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             step("cmake", &["-B", "build"]),
             step("cmake", &["--build", "build"]),
         ]),
+        ProjectKind::Zig => Ok(vec![step("zig", &["build"])]),
         ProjectKind::Make => Ok(vec![step("make", &[])]),
     }
 }
@@ -58,7 +59,7 @@ pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uu_detect::NodePM;
+    use project_detect::NodePM;
 
     #[test]
     fn cargo_check() {
@@ -161,6 +162,13 @@ mod tests {
         assert_eq!(s.len(), 2);
         assert_eq!(s[0].args, ["-B", "build"]);
         assert_eq!(s[1].args, ["--build", "build"]);
+    }
+
+    #[test]
+    fn zig_check() {
+        let s = steps(&ProjectKind::Zig).unwrap();
+        assert_eq!(s[0].program, "zig");
+        assert_eq!(s[0].args, ["build"]);
     }
 
     #[test]

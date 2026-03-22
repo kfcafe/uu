@@ -1,7 +1,7 @@
 //! `uu test` — detect project type and run the test suite.
 
 use anyhow::Result;
-use uu_detect::{NodePM, ProjectKind};
+use project_detect::{NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -30,6 +30,7 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::DotNet { .. } => vec![step("dotnet", &["test"])],
         ProjectKind::Meson => vec![step("meson", &["test", "-C", "builddir"])],
         ProjectKind::CMake => vec![step("ctest", &["--test-dir", "build"])],
+        ProjectKind::Zig => vec![step("zig", &["build", "test"])],
         ProjectKind::Make => vec![step("make", &["test"])],
     }
 }
@@ -76,6 +77,13 @@ mod tests {
         let s = steps(&ProjectKind::DotNet { sln: false });
         assert_eq!(s[0].program, "dotnet");
         assert_eq!(s[0].args, ["test"]);
+    }
+
+    #[test]
+    fn zig_test() {
+        let s = steps(&ProjectKind::Zig);
+        assert_eq!(s[0].program, "zig");
+        assert_eq!(s[0].args, ["build", "test"]);
     }
 
     #[test]

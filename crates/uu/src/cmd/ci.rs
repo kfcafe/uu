@@ -4,7 +4,7 @@
 //! Designed for CI gates and pre-push checks.
 
 use anyhow::{bail, Result};
-use uu_detect::{command_on_path, NodePM, ProjectKind};
+use project_detect::{command_on_path, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -86,6 +86,10 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ]),
         ProjectKind::Meson => Ok(vec![step("meson", &["test", "-C", "builddir"])]),
         ProjectKind::CMake => Ok(vec![step("ctest", &["--test-dir", "build"])]),
+        ProjectKind::Zig => Ok(vec![
+            step("zig", &["fmt", "--check", "."]),
+            step("zig", &["build", "test"]),
+        ]),
         ProjectKind::Make => Ok(vec![step("make", &["test"])]),
     }
 }
@@ -100,7 +104,7 @@ pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uu_detect::NodePM;
+    use project_detect::NodePM;
 
     #[test]
     fn cargo_ci_has_three_steps() {
@@ -196,6 +200,14 @@ mod tests {
     fn cmake_ci() {
         let s = steps(&ProjectKind::CMake).unwrap();
         assert_eq!(s[0].to_string(), "ctest --test-dir build");
+    }
+
+    #[test]
+    fn zig_ci() {
+        let s = steps(&ProjectKind::Zig).unwrap();
+        assert_eq!(s.len(), 2);
+        assert_eq!(s[0].to_string(), "zig fmt --check .");
+        assert_eq!(s[1].to_string(), "zig build test");
     }
 
     #[test]

@@ -1,9 +1,12 @@
 [package]
-name = "uu-detect"
+name = "project-detect"
 version = "0.1.0"
 edition = "2021"
-description = "Project type detection for uu — universal utilities"
+description = "Zero-config project type detection — identify any project's language, build system, and toolchain from directory contents"
 license = "MIT"
+repository = "https://github.com/kfcafe/project-detect"
+keywords = ["project", "detect", "build-system", "language", "toolchain"]
+categories = ["development-tools", "filesystem"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

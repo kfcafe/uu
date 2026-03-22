@@ -19,12 +19,12 @@ pub use schema::{Manifest, ManifestFragment, ProjectMeta};
 
 /// Generate a manifest for the project rooted at `root`.
 ///
-/// 1. Detects the project kind via `uu_detect::detect`.
+/// 1. Detects the project kind via `project_detect::detect`.
 /// 2. Builds a `ProjectContext` with source files and parsed configs.
 /// 3. Runs all matching adapters (sorted by priority, highest first).
 /// 4. Merges adapter fragments into a single `Manifest`.
 pub fn generate(root: &Path) -> Result<Manifest> {
-    let kind = uu_detect::detect(root)
+    let kind = project_detect::detect(root)
         .ok_or_else(|| anyhow::anyhow!("could not detect project type in {}", root.display()))?;
 
     let ctx = ProjectContext::build(root, &kind)?;
@@ -637,10 +637,10 @@ mod tests {
         fs::create_dir_all(dir.path().join("src")).unwrap();
         fs::write(dir.path().join("src/main.rs"), "fn main() {}").unwrap();
 
-        let kind = uu_detect::detect(dir.path()).unwrap();
+        let kind = project_detect::detect(dir.path()).unwrap();
         let ctx = ProjectContext::build(dir.path(), &kind).unwrap();
 
-        assert_eq!(ctx.kind, uu_detect::ProjectKind::Cargo);
+        assert_eq!(ctx.kind, project_detect::ProjectKind::Cargo);
         assert!(ctx.cargo_toml.is_some());
         assert!(ctx.package_json.is_none());
         assert!(ctx.go_mod.is_none());
@@ -657,7 +657,7 @@ mod tests {
         )
         .unwrap();
 
-        let kind = uu_detect::detect(dir.path()).unwrap();
+        let kind = project_detect::detect(dir.path()).unwrap();
         let ctx = ProjectContext::build(dir.path(), &kind).unwrap();
 
         let pkg = ctx.package_json.as_ref().unwrap();

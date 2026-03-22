@@ -170,8 +170,8 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Node {
-                manager: uu_detect::NodePM::Npm,
+            kind: project_detect::ProjectKind::Node {
+                manager: project_detect::NodePM::Npm,
             },
             files: vec![],
             package_json: Some(serde_json::json!({
@@ -188,8 +188,8 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Node {
-                manager: uu_detect::NodePM::Npm,
+            kind: project_detect::ProjectKind::Node {
+                manager: project_detect::NodePM::Npm,
             },
             files: vec![],
             package_json: Some(serde_json::json!({
@@ -206,8 +206,8 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Node {
-                manager: uu_detect::NodePM::Npm,
+            kind: project_detect::ProjectKind::Node {
+                manager: project_detect::NodePM::Npm,
             },
             files: vec![],
             package_json: Some(serde_json::json!({
@@ -244,8 +244,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         let ctx = ProjectContext {
             root: root.to_path_buf(),
-            kind: uu_detect::ProjectKind::Node {
-                manager: uu_detect::NodePM::Npm,
+            kind: project_detect::ProjectKind::Node {
+                manager: project_detect::NodePM::Npm,
             },
             files: vec![root.join("auth.ts")],
             package_json: Some(serde_json::json!({
@@ -278,8 +278,8 @@ export default { providers: [Google], session: { strategy: "database" } }
 
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Node {
-                manager: uu_detect::NodePM::Npm,
+            kind: project_detect::ProjectKind::Node {
+                manager: project_detect::NodePM::Npm,
             },
             files: vec![dir.path().join("auth.ts")],
             package_json: Some(serde_json::json!({

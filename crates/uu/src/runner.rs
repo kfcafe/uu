@@ -5,7 +5,7 @@ use std::fmt;
 use std::process::{self, Command, Stdio};
 
 use anyhow::{Context, Result};
-use uu_detect::{detect_walk, supported_table, ProjectKind};
+use project_detect::{detect_walk, supported_table, ProjectKind};
 
 /// A single shell command to execute.
 pub(crate) struct Step {

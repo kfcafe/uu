@@ -7,7 +7,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result};
-use uu_detect::ProjectKind;
+use project_detect::ProjectKind;
 
 use crate::runner::{self, style};
 
@@ -195,7 +195,7 @@ mod tests {
     #[test]
     fn no_native_clean_for_node() {
         let kind = ProjectKind::Node {
-            manager: uu_detect::NodePM::Npm,
+            manager: project_detect::NodePM::Npm,
         };
         assert!(native_clean_cmd(&kind).is_none());
     }

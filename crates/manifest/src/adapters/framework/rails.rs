@@ -443,7 +443,7 @@ mod tests {
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Ruby,
+            kind: project_detect::ProjectKind::Ruby,
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -463,7 +463,7 @@ mod tests {
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Ruby,
+            kind: project_detect::ProjectKind::Ruby,
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -570,7 +570,7 @@ end
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Ruby,
+            kind: project_detect::ProjectKind::Ruby,
             files: vec![models.join("product.rb")],
             package_json: None,
             cargo_toml: None,

@@ -1,7 +1,7 @@
 //! `uu install` — detect project type and run the install command.
 
 use anyhow::Result;
-use uu_detect::{NodePM, ProjectKind};
+use project_detect::{NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -43,6 +43,7 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
             step("cmake", &["--build", "build"]),
             step("cmake", &["--install", "build"]),
         ],
+        ProjectKind::Zig => vec![step("zig", &["build", "-Doptimize=ReleaseSafe"])],
         ProjectKind::Make => vec![step("make", &[]), step("make", &["install"])],
     }
 }
@@ -55,7 +56,7 @@ pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
     // Node projects with a "bin" field should also link the binary onto PATH.
     if let ProjectKind::Node { manager } = &kind {
         let dir = std::env::current_dir()?;
-        if uu_detect::node_has_bin(&dir) {
+        if project_detect::node_has_bin(&dir) {
             let cmd = match manager {
                 NodePM::Bun => "bun",
                 NodePM::Pnpm => "pnpm",
@@ -87,6 +88,13 @@ mod tests {
             manager: NodePM::Pnpm,
         });
         assert_eq!(s[0].program, "pnpm");
+    }
+
+    #[test]
+    fn zig_install() {
+        let s = steps(&ProjectKind::Zig);
+        assert_eq!(s[0].program, "zig");
+        assert_eq!(s[0].args, ["build", "-Doptimize=ReleaseSafe"]);
     }
 
     #[test]

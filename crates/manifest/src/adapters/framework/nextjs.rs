@@ -252,8 +252,8 @@ mod tests {
         let files = walk_files(&root);
         ProjectContext {
             root,
-            kind: uu_detect::ProjectKind::Node {
-                manager: uu_detect::NodePM::Npm,
+            kind: project_detect::ProjectKind::Node {
+                manager: project_detect::NodePM::Npm,
             },
             files,
             package_json: pkg_json,

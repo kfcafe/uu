@@ -1,7 +1,7 @@
 //! `uu fmt` — detect project type and run the formatter.
 
 use anyhow::{bail, Result};
-use uu_detect::{command_on_path, NodePM, ProjectKind};
+use project_detect::{command_on_path, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -68,6 +68,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             "CMake has no built-in formatter\n\n  \
              try: cmake-format -i CMakeLists.txt"
         ),
+        ProjectKind::Zig => Ok(vec![step("zig", &["fmt", "."])]),
         ProjectKind::Make => bail!("Make has no built-in formatter"),
     }
 }
@@ -82,7 +83,7 @@ pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uu_detect::NodePM;
+    use project_detect::NodePM;
 
     #[test]
     fn cargo_fmt() {
@@ -153,6 +154,13 @@ mod tests {
     #[test]
     fn cmake_unsupported() {
         assert!(steps(&ProjectKind::CMake).is_err());
+    }
+
+    #[test]
+    fn zig_fmt() {
+        let s = steps(&ProjectKind::Zig).unwrap();
+        assert_eq!(s[0].program, "zig");
+        assert_eq!(s[0].args, ["fmt", "."]);
     }
 
     #[test]

@@ -36,7 +36,7 @@ $ uu doctor                   $ uu test
   ✓ cargo-clippy
 ```
 
-It works across 13 ecosystems. No config files. No setup. `cd` into a project and go.
+It works across 14 ecosystems. No config files. No setup. `cd` into a project and go.
 
 ## Install
 
@@ -236,7 +236,7 @@ uu
 
 `uu map` uses tree-sitter for accurate AST-level extraction — no regex, no guessing.
 
-**Languages:** Rust, Go, Python, TypeScript, JavaScript, Elixir, Java, Ruby, Swift, C#, C/C++
+**Languages:** Rust, Go, Python, TypeScript, JavaScript, Elixir, Java, Ruby, Swift, C#, C/C++, Zig
 
 **Frameworks:** Next.js, Express, Prisma, shadcn/ui, Auth.js, Axum, Django, FastAPI, Phoenix, Ecto, Rails, Spring, Gin, GORM, ASP.NET
 
@@ -255,10 +255,11 @@ uu
 | 7 | `pom.xml` | Maven | `mvn package` | `mvn -DskipTests package` | `mvn test` | `mvn install` | `mvn test` | — | — | — | — |
 | 8 | `Gemfile` | Ruby | `bundle exec rake build` | — | `bundle exec rake test` | `bundle install` | `bundle exec rake test` | `rubocop -a` | `rubocop -a` | `rubocop` | `rubocop` |
 | 9 | `Package.swift` | Swift | `swift build` | `swift build` | build + test | `swift build -c release` | `swift test` | `swift run` | `swift run` | — | — |
-| 10 | `*.csproj` | .NET | `dotnet build` | `dotnet build` | fmt‑check + build + test | `dotnet publish` | `dotnet test` | `dotnet run` | `dotnet watch run` | `dotnet format` | `dotnet format`⁶ |
-| 11 | `meson.build` | Meson | `meson setup` + `compile` | `meson compile` | `meson test` | `meson setup` + `install` | `meson test` | — | — | — | — |
-| 12 | `CMakeLists.txt` | CMake | `cmake -B` + `--build` | `cmake -B` + `--build` | `ctest` | `cmake` build + install | `ctest` | — | — | — | — |
-| 13 | `Makefile` | Make | `make` | `make` | `make test` | `make && make install` | `make test` | `make run` | `make run` | — | — |
+| 10 | `build.zig` | Zig | `zig build` | `zig build` | fmt‑check + test | `zig build -Doptimize=ReleaseSafe` | `zig build test` | `zig build run` | `zig build run` | `zig fmt .` | — |
+| 11 | `*.csproj` | .NET | `dotnet build` | `dotnet build` | fmt‑check + build + test | `dotnet publish` | `dotnet test` | `dotnet run` | `dotnet watch run` | `dotnet format` | `dotnet format`⁶ |
+| 12 | `meson.build` | Meson | `meson setup` + `compile` | `meson compile` | `meson test` | `meson setup` + `install` | `meson test` | — | — | — | — |
+| 13 | `CMakeLists.txt` | CMake | `cmake -B` + `--build` | `cmake -B` + `--build` | `ctest` | `cmake` build + install | `ctest` | — | — | — | — |
+| 14 | `Makefile` | Make | `make` | `make` | `make test` | `make && make install` | `make test` | `make run` | `make run` | — | — |
 
 ¹ Falls back to `black`/`flake8` if ruff is not installed.
 ² Detects your package manager from lockfile: npm, yarn, pnpm, or bun.
@@ -274,7 +275,7 @@ uu
 
 `uu` is three crates:
 
-- **`uu-detect`** — scans the current directory for build system files (`Cargo.toml`, `go.mod`, `package.json`, etc.) and returns a `ProjectKind` with ecosystem-specific metadata. When multiple files exist, language-specific ones win over generic build systems.
+- **[`project-detect`](crates/detect/)** — standalone project detection library ([publishable independently](https://github.com/kfcafe/project-detect)). Scans a directory for build system files (`Cargo.toml`, `go.mod`, `package.json`, etc.) and returns a `ProjectKind` with ecosystem-specific metadata. When multiple files exist, language-specific ones win over generic build systems.
 - **`uu-manifest`** — the map engine. Uses tree-sitter to parse source files via language and framework adapters. Produces a structured manifest of types, functions, modules, routes, models, and integrations. Supports diffing between manifests.
 - **`uu`** — the CLI binary. Each command maps the detected `ProjectKind` to the right shell command and runs it. The `map` command adds subcommands for querying and exploring the manifest interactively.
 
@@ -283,8 +284,8 @@ The detection library is the engine. Add a new ecosystem once and every command 
 ```
 uu/
 ├── crates/
-│   ├── detect/       Project detection library
-│   ├── manifest/     Tree-sitter manifest generator (11 languages, 16 frameworks)
+│   ├── detect/       project-detect — standalone project detection library
+│   ├── manifest/     Tree-sitter manifest generator (12 languages, 16 frameworks)
 │   └── uu/           CLI binary
 └── README.md
 ```

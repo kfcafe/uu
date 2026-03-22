@@ -3,8 +3,8 @@
 use std::path::Path;
 
 use anyhow::Result;
+use project_detect::ProjectKind;
 use tree_sitter::{Node, Parser};
-use uu_detect::ProjectKind;
 
 use crate::adapters::{Adapter, AdapterLayer};
 use crate::context::ProjectContext;
@@ -822,7 +822,7 @@ export function App(): JSX.Element {
         let node_ctx = ProjectContext {
             root: std::path::PathBuf::from("/tmp/nonexistent"),
             kind: ProjectKind::Node {
-                manager: uu_detect::NodePM::Npm,
+                manager: project_detect::NodePM::Npm,
             },
             files: vec![],
             package_json: None,

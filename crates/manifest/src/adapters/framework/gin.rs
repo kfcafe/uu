@@ -221,7 +221,7 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Go,
+            kind: project_detect::ProjectKind::Go,
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -237,7 +237,7 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Go,
+            kind: project_detect::ProjectKind::Go,
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -326,7 +326,7 @@ func main() {
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Go,
+            kind: project_detect::ProjectKind::Go,
             files: vec![dir.path().join("main.go")],
             package_json: None,
             cargo_toml: None,

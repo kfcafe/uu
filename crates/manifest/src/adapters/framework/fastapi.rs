@@ -474,7 +474,7 @@ dependencies = [
 
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Python { uv: false },
+            kind: project_detect::ProjectKind::Python { uv: false },
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -494,7 +494,7 @@ dependencies = [
 
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Python { uv: false },
+            kind: project_detect::ProjectKind::Python { uv: false },
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -510,7 +510,7 @@ dependencies = [
 
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Python { uv: false },
+            kind: project_detect::ProjectKind::Python { uv: false },
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -629,7 +629,7 @@ async def health():
 
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Python { uv: false },
+            kind: project_detect::ProjectKind::Python { uv: false },
             files: vec![dir.path().join("main.py")],
             package_json: None,
             cargo_toml: None,

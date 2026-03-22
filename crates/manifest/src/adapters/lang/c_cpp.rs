@@ -4,8 +4,8 @@
 //! `.cxx`, `.hpp`, `.hxx` files. Focuses on header files for the public API surface.
 
 use anyhow::Result;
+use project_detect::ProjectKind;
 use tree_sitter::{Node, Parser};
-use uu_detect::ProjectKind;
 
 use crate::adapters::{Adapter, AdapterLayer};
 use crate::context::ProjectContext;

@@ -3,8 +3,8 @@
 use std::path::Path;
 
 use anyhow::Result;
+use project_detect::ProjectKind;
 use tree_sitter::{Node, Parser};
-use uu_detect::ProjectKind;
 
 use crate::adapters::{Adapter, AdapterLayer};
 use crate::context::ProjectContext;
@@ -601,7 +601,7 @@ func NewApp(name string) *App {
         )
         .unwrap();
 
-        let kind = uu_detect::detect(dir.path()).unwrap();
+        let kind = project_detect::detect(dir.path()).unwrap();
         let ctx = ProjectContext::build(dir.path(), &kind).unwrap();
         let adapter = GoAdapter;
         assert!(adapter.detect(&ctx));

@@ -234,7 +234,7 @@ end
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Elixir { escript: false },
+            kind: project_detect::ProjectKind::Elixir { escript: false },
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -260,7 +260,7 @@ end
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Elixir { escript: false },
+            kind: project_detect::ProjectKind::Elixir { escript: false },
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -379,7 +379,7 @@ end
 
         let ctx = crate::context::ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Elixir { escript: false },
+            kind: project_detect::ProjectKind::Elixir { escript: false },
             files: vec![lib.join("user.ex")],
             package_json: None,
             cargo_toml: None,

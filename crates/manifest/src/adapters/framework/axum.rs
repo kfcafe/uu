@@ -315,7 +315,7 @@ mod tests {
         let dir = tempfile::TempDir::new().unwrap();
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Cargo,
+            kind: project_detect::ProjectKind::Cargo,
             files: vec![],
             package_json: None,
             cargo_toml: Some(
@@ -338,7 +338,7 @@ tokio = { version = "1", features = ["full"] }
         let dir = tempfile::TempDir::new().unwrap();
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Cargo,
+            kind: project_detect::ProjectKind::Cargo,
             files: vec![],
             package_json: None,
             cargo_toml: Some(
@@ -360,7 +360,7 @@ actix-web = "4"
         let dir = tempfile::TempDir::new().unwrap();
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Cargo,
+            kind: project_detect::ProjectKind::Cargo,
             files: vec![],
             package_json: None,
             cargo_toml: None,
@@ -470,7 +470,7 @@ async fn list_items() -> &'static str {
 
         let ctx = ProjectContext {
             root: dir.path().to_path_buf(),
-            kind: uu_detect::ProjectKind::Cargo,
+            kind: project_detect::ProjectKind::Cargo,
             files: vec![src.join("main.rs")],
             package_json: None,
             cargo_toml: Some(
