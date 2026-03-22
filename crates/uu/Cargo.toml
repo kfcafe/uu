@@ -10,7 +10,7 @@ name = "uu"
 path = "src/main.rs"
 
 [dependencies]
-project-detect = { path = "../../../project-detect" }
+project-detect = "0.1"
 uu-manifest = { path = "../manifest" }
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
