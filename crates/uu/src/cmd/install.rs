@@ -1,5 +1,7 @@
 //! `uu install` — detect project type and run the install command.
 
+use std::fs;
+
 use anyhow::Result;
 use project_detect::{NodePM, ProjectKind};
 
@@ -16,7 +18,13 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::Elixir { escript: false } => {
             vec![step("mix", &["deps.get"]), step("mix", &["compile"])]
         }
-        ProjectKind::Python { uv: true } => vec![step("uv", &["pip", "install", "."])],
+        ProjectKind::Python { uv: true } => {
+            if python_has_scripts() {
+                vec![step("uv", &["tool", "install", "--force", "."])]
+            } else {
+                vec![step("uv", &["pip", "install", "."])]
+            }
+        }
         ProjectKind::Python { uv: false } => vec![step("pip", &["install", "."])],
         ProjectKind::Node { manager } => {
             let cmd = match manager {
@@ -56,7 +64,10 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::Rebar => vec![step("rebar3", &["get-deps"]), step("rebar3", &["compile"])],
         ProjectKind::Dune => vec![step("dune", &["build"]), step("dune", &["install"])],
         ProjectKind::Perl => vec![step("cpanm", &["--installdeps", "."])],
-        ProjectKind::Julia => vec![step("julia", &["--project", "-e", "using Pkg; Pkg.instantiate()"])],
+        ProjectKind::Julia => vec![step(
+            "julia",
+            &["--project", "-e", "using Pkg; Pkg.instantiate()"],
+        )],
         ProjectKind::Nim => vec![step("nimble", &["install"])],
         ProjectKind::Crystal => vec![step("shards", &["install"])],
         ProjectKind::Vlang => vec![step("v", &["install", "."])],
@@ -64,6 +75,15 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::Lua => vec![step("luarocks", &["install", "--deps-only", "."])],
         ProjectKind::Bazel => vec![step("bazel", &["build", "//..."])],
     }
+}
+
+/// Check whether pyproject.toml defines `[project.scripts]` — i.e. the project
+/// ships CLI entry points that should be installed onto PATH.
+fn python_has_scripts() -> bool {
+    let Ok(content) = fs::read_to_string("pyproject.toml") else {
+        return false;
+    };
+    content.contains("[project.scripts]")
 }
 
 pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
