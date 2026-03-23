@@ -27,6 +27,26 @@ impl fmt::Display for Step {
     }
 }
 
+/// Resolve the Python interpreter: prefer `python3` (always present on macOS/Homebrew),
+/// fall back to `python`.
+pub(crate) fn python_cmd() -> &'static str {
+    use std::sync::OnceLock;
+    static CMD: OnceLock<&str> = OnceLock::new();
+    CMD.get_or_init(|| {
+        let found = Command::new("python3")
+            .arg("--version")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .is_ok();
+        if found {
+            "python3"
+        } else {
+            "python"
+        }
+    })
+}
+
 /// Build a [`Step`] from a program name and argument slices.
 pub(crate) fn step(program: &str, args: &[&str]) -> Step {
     Step {

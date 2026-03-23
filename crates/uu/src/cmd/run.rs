@@ -14,7 +14,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Go => Ok(vec![step("go", &["run", "."])]),
         ProjectKind::Elixir { .. } => Ok(vec![step("mix", &["run"])]),
         ProjectKind::Python { uv: true } => python_steps("uv", &["run"]),
-        ProjectKind::Python { uv: false } => python_steps("python", &[]),
+        ProjectKind::Python { uv: false } => python_steps(runner::python_cmd(), &[]),
         ProjectKind::Node { manager } => {
             let cmd = match manager {
                 NodePM::Bun => "bun",

@@ -78,7 +78,7 @@ fn python_dev_steps(uv: bool) -> Result<Vec<Step>> {
     let (cmd, prefix): (&str, &[&str]) = if uv {
         ("uv", &["run"] as &[&str])
     } else {
-        ("python", &[] as &[&str])
+        (runner::python_cmd(), &[] as &[&str])
     };
 
     if dir.join("manage.py").exists() {

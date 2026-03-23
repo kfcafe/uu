@@ -13,7 +13,9 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::Elixir { escript: true } => vec![step("mix", &["escript.build"])],
         ProjectKind::Elixir { escript: false } => vec![step("mix", &["compile"])],
         ProjectKind::Python { uv: true, .. } => vec![step("uv", &["run", "python", "-m", "build"])],
-        ProjectKind::Python { uv: false, .. } => vec![step("python", &["-m", "build"])],
+        ProjectKind::Python { uv: false, .. } => {
+            vec![step(runner::python_cmd(), &["-m", "build"])]
+        }
         ProjectKind::Node { manager } => {
             let cmd = match manager {
                 NodePM::Bun => "bun",
@@ -41,7 +43,9 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::Make => vec![step("make", &[])],
         ProjectKind::Php | ProjectKind::Julia | ProjectKind::Lua => vec![],
         ProjectKind::Dart { flutter: true } => vec![step("flutter", &["build"])],
-        ProjectKind::Dart { flutter: false } => vec![step("dart", &["compile", "exe", "bin/main.dart"])],
+        ProjectKind::Dart { flutter: false } => {
+            vec![step("dart", &["compile", "exe", "bin/main.dart"])]
+        }
         ProjectKind::Sbt => vec![step("sbt", &["compile"])],
         ProjectKind::Haskell { stack: true } => vec![step("stack", &["build"])],
         ProjectKind::Haskell { stack: false } => vec![step("cabal", &["build"])],

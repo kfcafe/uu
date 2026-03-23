@@ -3,7 +3,7 @@
 use anyhow::Result;
 use project_detect::{command_on_path, detect_walk, supported_table, NodePM, ProjectKind};
 
-use crate::runner::style;
+use crate::runner::{self, style};
 
 /// Return the list of external programs used by `uu` for a given project kind.
 fn required_tools(kind: &ProjectKind) -> Vec<&'static str> {
@@ -11,8 +11,8 @@ fn required_tools(kind: &ProjectKind) -> Vec<&'static str> {
         ProjectKind::Cargo => vec!["cargo", "rustfmt", "cargo-clippy"],
         ProjectKind::Go => vec!["go", "gofmt"],
         ProjectKind::Elixir { .. } => vec!["mix"],
-        ProjectKind::Python { uv: true, .. } => vec!["uv", "python", "pytest", "ruff"],
-        ProjectKind::Python { uv: false, .. } => vec!["pip", "python", "pytest", "ruff"],
+        ProjectKind::Python { uv: true, .. } => vec!["uv", runner::python_cmd(), "pytest", "ruff"],
+        ProjectKind::Python { uv: false, .. } => vec!["pip", runner::python_cmd(), "pytest", "ruff"],
         ProjectKind::Node { manager } => match manager {
             NodePM::Bun => vec!["bun"],
             NodePM::Pnpm => vec!["pnpm"],
@@ -122,6 +122,8 @@ mod tests {
         let tools = required_tools(&ProjectKind::Python { uv: true });
         assert!(tools.contains(&"uv"));
         assert!(!tools.contains(&"pip"));
+        let py = runner::python_cmd();
+        assert!(tools.contains(&py));
     }
 
     #[test]
@@ -129,6 +131,8 @@ mod tests {
         let tools = required_tools(&ProjectKind::Python { uv: false });
         assert!(tools.contains(&"pip"));
         assert!(!tools.contains(&"uv"));
+        let py = runner::python_cmd();
+        assert!(tools.contains(&py));
     }
 
     #[test]
