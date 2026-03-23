@@ -65,6 +65,26 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
 pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
     let kind = runner::detect_project()?;
 
+    // Python's `build` module is a separate PyPI package — bail early with
+    // an actionable message instead of letting Python print the opaque
+    // "No module named build" traceback.
+    if matches!(kind, ProjectKind::Python { uv: false, .. }) && !dry_run {
+        let py = runner::python_cmd();
+        let has_build = std::process::Command::new(py)
+            .args(["-c", "import build"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false);
+        if !has_build {
+            anyhow::bail!(
+                "Python `build` package is not installed\n\n  \
+                 run: {py} -m pip install build"
+            );
+        }
+    }
+
     // Node projects may not have a build script — skip gracefully.
     if matches!(kind, ProjectKind::Node { .. }) {
         let dir = std::env::current_dir()?;
