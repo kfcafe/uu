@@ -38,10 +38,15 @@ impl ProjectContext {
 }
 
 /// Walk all files under `root`, respecting `.gitignore` rules.
+/// Skips entries that fail due to permission errors or other IO issues
+/// rather than aborting the entire walk.
 fn walk_source_files(root: &Path) -> Result<Vec<PathBuf>> {
     let mut files = Vec::new();
     for entry in WalkBuilder::new(root).build() {
-        let entry = entry?;
+        let entry = match entry {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
         if entry.file_type().is_some_and(|ft| ft.is_file()) {
             files.push(entry.into_path());
         }
