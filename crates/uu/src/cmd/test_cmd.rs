@@ -1,7 +1,7 @@
 //! `uu test` — detect project type and run the test suite.
 
 use anyhow::Result;
-use project_detect::{NodePM, ProjectKind};
+use project_detect::{KotlinBuild, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -22,11 +22,21 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
             };
             vec![step(cmd, &["test"])]
         }
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => vec![step("./gradlew", &["test"])],
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => vec![step("gradle", &["test"])],
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => vec![step("mvn", &["test"])],
         ProjectKind::Gradle { wrapper: true } => vec![step("./gradlew", &["test"])],
         ProjectKind::Gradle { wrapper: false } => vec![step("gradle", &["test"])],
         ProjectKind::Maven => vec![step("mvn", &["test"])],
         ProjectKind::Ruby => vec![step("bundle", &["exec", "rake", "test"])],
         ProjectKind::Swift => vec![step("swift", &["test"])],
+        ProjectKind::Xcode { .. } => vec![step("xcodebuild", &["test"])],
         ProjectKind::DotNet { .. } => vec![step("dotnet", &["test"])],
         ProjectKind::Meson => vec![step("meson", &["test", "-C", "builddir"])],
         ProjectKind::CMake => vec![step("ctest", &["--test-dir", "build"])],
@@ -44,6 +54,7 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::Dune => vec![step("dune", &["test"])],
         ProjectKind::Perl => vec![step("prove", &["-l"])],
         ProjectKind::Julia => vec![step("julia", &["--project", "-e", "using Pkg; Pkg.test()"])],
+        ProjectKind::R { .. } => vec![step("R", &["CMD", "check", "--no-manual", "."])],
         ProjectKind::Nim => vec![step("nimble", &["test"])],
         ProjectKind::Crystal => vec![step("crystal", &["spec"])],
         ProjectKind::Vlang => vec![step("v", &["test", "."])],
@@ -87,6 +98,15 @@ mod tests {
     fn swift_test() {
         let s = steps(&ProjectKind::Swift);
         assert_eq!(s[0].program, "swift");
+        assert_eq!(s[0].args, ["test"]);
+    }
+
+    #[test]
+    fn kotlin_test() {
+        let s = steps(&ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        });
+        assert_eq!(s[0].program, "gradle");
         assert_eq!(s[0].args, ["test"]);
     }
 

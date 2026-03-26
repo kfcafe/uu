@@ -3,7 +3,7 @@
 use std::fs;
 
 use anyhow::Result;
-use project_detect::{NodePM, ProjectKind};
+use project_detect::{KotlinBuild, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -35,11 +35,23 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
             };
             vec![step(cmd, &["install"])]
         }
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => vec![step("./gradlew", &["build"])],
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => vec![step("gradle", &["build"])],
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => vec![step("mvn", &["install"])],
         ProjectKind::Gradle { wrapper: true } => vec![step("./gradlew", &["build"])],
         ProjectKind::Gradle { wrapper: false } => vec![step("gradle", &["build"])],
         ProjectKind::Maven => vec![step("mvn", &["install"])],
         ProjectKind::Ruby => vec![step("bundle", &["install"])],
         ProjectKind::Swift => vec![step("swift", &["build", "-c", "release"])],
+        ProjectKind::Xcode { .. } => {
+            vec![step("xcodebuild", &["-configuration", "Release", "build"])]
+        }
         ProjectKind::DotNet { .. } => vec![step("dotnet", &["publish", "-c", "Release"])],
         ProjectKind::Meson => vec![
             step("meson", &["setup", "builddir"]),
@@ -68,6 +80,7 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
             "julia",
             &["--project", "-e", "using Pkg; Pkg.instantiate()"],
         )],
+        ProjectKind::R { .. } => vec![step("R", &["CMD", "INSTALL", "."])],
         ProjectKind::Nim => vec![step("nimble", &["install"])],
         ProjectKind::Crystal => vec![step("shards", &["install"])],
         ProjectKind::Vlang => vec![step("v", &["install", "."])],

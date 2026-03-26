@@ -1,7 +1,7 @@
 //! `uu check` — detect project type and typecheck without running tests.
 
 use anyhow::{bail, Result};
-use project_detect::{NodePM, ProjectKind};
+use project_detect::{KotlinBuild, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -26,6 +26,15 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             };
             Ok(vec![step(cmd, &["run", "typecheck"])])
         }
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => Ok(vec![step("./gradlew", &["build", "-x", "test"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => Ok(vec![step("gradle", &["build", "-x", "test"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => Ok(vec![step("mvn", &["-DskipTests", "package"])]),
         ProjectKind::Gradle { wrapper: true } => {
             Ok(vec![step("./gradlew", &["build", "-x", "test"])])
         }
@@ -38,6 +47,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
              try: srb tc    # gem install sorbet"
         ),
         ProjectKind::Swift => Ok(vec![step("swift", &["build"])]),
+        ProjectKind::Xcode { .. } => Ok(vec![step("xcodebuild", &["build"])]),
         ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["build", "--no-restore"])]),
         ProjectKind::Meson => Ok(vec![step("meson", &["compile", "-C", "builddir"])]),
         ProjectKind::CMake => Ok(vec![
@@ -57,8 +67,12 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Vlang => Ok(vec![step("v", &["."])]),
         ProjectKind::Gleam => Ok(vec![step("gleam", &["check"])]),
         ProjectKind::Bazel => Ok(vec![step("bazel", &["build", "//..."])]),
-        ProjectKind::Php | ProjectKind::Clojure { .. } | ProjectKind::Perl
-        | ProjectKind::Julia | ProjectKind::Lua => {
+        ProjectKind::Php
+        | ProjectKind::Clojure { .. }
+        | ProjectKind::Perl
+        | ProjectKind::Julia
+        | ProjectKind::R { .. }
+        | ProjectKind::Lua => {
             bail!("{} has no built-in typecheck", kind.label())
         }
     }
@@ -74,7 +88,7 @@ pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use project_detect::NodePM;
+    use project_detect::{KotlinBuild, NodePM};
 
     #[test]
     fn cargo_check() {
@@ -112,6 +126,16 @@ mod tests {
         .unwrap();
         assert_eq!(s[0].program, "npm");
         assert_eq!(s[0].args, ["run", "typecheck"]);
+    }
+
+    #[test]
+    fn kotlin_maven_check() {
+        let s = steps(&ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        })
+        .unwrap();
+        assert_eq!(s[0].program, "mvn");
+        assert_eq!(s[0].args, ["-DskipTests", "package"]);
     }
 
     #[test]

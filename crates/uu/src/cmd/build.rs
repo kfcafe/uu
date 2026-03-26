@@ -1,7 +1,7 @@
 //! `uu build` — detect project type and build the project.
 
 use anyhow::Result;
-use project_detect::{NodePM, ProjectKind};
+use project_detect::{KotlinBuild, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -25,11 +25,21 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
             };
             vec![step(cmd, &["run", "build"])]
         }
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => vec![step("./gradlew", &["build"])],
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => vec![step("gradle", &["build"])],
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => vec![step("mvn", &["package"])],
         ProjectKind::Gradle { wrapper: true } => vec![step("./gradlew", &["build"])],
         ProjectKind::Gradle { wrapper: false } => vec![step("gradle", &["build"])],
         ProjectKind::Maven => vec![step("mvn", &["package"])],
         ProjectKind::Ruby => vec![step("bundle", &["exec", "rake", "build"])],
         ProjectKind::Swift => vec![step("swift", &["build"])],
+        ProjectKind::Xcode { .. } => vec![step("xcodebuild", &["build"])],
         ProjectKind::DotNet { .. } => vec![step("dotnet", &["build"])],
         ProjectKind::Meson => vec![
             step("meson", &["setup", "builddir"]),
@@ -42,6 +52,7 @@ fn steps(kind: &ProjectKind) -> Vec<Step> {
         ProjectKind::Zig => vec![step("zig", &["build"])],
         ProjectKind::Make => vec![step("make", &[])],
         ProjectKind::Php | ProjectKind::Julia | ProjectKind::Lua => vec![],
+        ProjectKind::R { .. } => vec![step("R", &["CMD", "build", "."])],
         ProjectKind::Dart { flutter: true } => vec![step("flutter", &["build"])],
         ProjectKind::Dart { flutter: false } => {
             vec![step("dart", &["compile", "exe", "bin/main.dart"])]
@@ -111,7 +122,7 @@ pub(crate) fn execute(dry_run: bool, extra_args: Vec<String>) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use project_detect::NodePM;
+    use project_detect::{KotlinBuild, NodePM};
 
     #[test]
     fn cargo_build() {
@@ -134,6 +145,15 @@ mod tests {
         });
         assert_eq!(s[0].program, "npm");
         assert_eq!(s[0].args, ["run", "build"]);
+    }
+
+    #[test]
+    fn kotlin_gradle_build() {
+        let s = steps(&ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        });
+        assert_eq!(s[0].program, "./gradlew");
+        assert_eq!(s[0].args, ["build"]);
     }
 
     #[test]

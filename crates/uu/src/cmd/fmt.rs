@@ -1,7 +1,7 @@
 //! `uu fmt` — detect project type and run the formatter.
 
 use anyhow::{bail, Result};
-use project_detect::{command_on_path, NodePM, ProjectKind};
+use project_detect::{command_on_path, KotlinBuild, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -48,6 +48,18 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             };
             Ok(vec![step(cmd, &["run", "format"])])
         }
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => Ok(vec![step("./gradlew", &["spotlessApply"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => Ok(vec![step("gradle", &["spotlessApply"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => bail!(
+            "Kotlin (Maven) has no built-in formatter\n\n  \
+             try: mvn com.spotify.fmt:fmt-maven-plugin:format"
+        ),
         ProjectKind::Gradle { wrapper: true } => Ok(vec![step("./gradlew", &["spotlessApply"])]),
         ProjectKind::Gradle { wrapper: false } => Ok(vec![step("gradle", &["spotlessApply"])]),
         ProjectKind::Maven => bail!(
@@ -58,6 +70,11 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Swift => bail!(
             "Swift has no built-in formatter\n\n  \
              try: swift-format format -i -r .    # brew install swift-format"
+        ),
+        ProjectKind::Xcode { .. } => bail!(
+            "Xcode projects have no built-in formatter\n\n  \
+             try: swift-format format -i -r .    # Swift\n  \
+                  clang-format -i **/*.{{m,mm,h}} # Objective-C / Objective-C++"
         ),
         ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["format"])]),
         ProjectKind::Meson => bail!(
@@ -76,12 +93,23 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Crystal => Ok(vec![step("crystal", &["tool", "format", "."])]),
         ProjectKind::Vlang => Ok(vec![step("v", &["fmt", "."])]),
         ProjectKind::Gleam => Ok(vec![step("gleam", &["format"])]),
-        ProjectKind::Php => bail!("PHP has no built-in formatter\n\n  try: vendor/bin/php-cs-fixer fix"),
-        ProjectKind::Haskell { .. } => bail!("Haskell has no built-in formatter\n\n  try: ormolu -i **/*.hs"),
-        ProjectKind::Clojure { .. } => bail!("Clojure has no built-in formatter\n\n  try: lein cljfmt fix"),
+        ProjectKind::Php => {
+            bail!("PHP has no built-in formatter\n\n  try: vendor/bin/php-cs-fixer fix")
+        }
+        ProjectKind::Haskell { .. } => {
+            bail!("Haskell has no built-in formatter\n\n  try: ormolu -i **/*.hs")
+        }
+        ProjectKind::Clojure { .. } => {
+            bail!("Clojure has no built-in formatter\n\n  try: lein cljfmt fix")
+        }
         ProjectKind::Rebar => bail!("Erlang has no built-in formatter\n\n  try: rebar3 fmt"),
         ProjectKind::Perl => bail!("Perl has no built-in formatter\n\n  try: perltidy -b *.pl"),
-        ProjectKind::Julia => bail!("Julia has no built-in formatter\n\n  try: using JuliaFormatter; format(\".\")"),
+        ProjectKind::Julia => {
+            bail!("Julia has no built-in formatter\n\n  try: using JuliaFormatter; format(\".\")")
+        }
+        ProjectKind::R { .. } => {
+            bail!("R has no built-in formatter\n\n  try: R -q -e 'styler::style_pkg()'")
+        }
         ProjectKind::Nim => bail!("Nim has no built-in formatter\n\n  try: nimpretty *.nim"),
         ProjectKind::Lua => bail!("Lua has no built-in formatter\n\n  try: stylua ."),
         ProjectKind::Bazel => Ok(vec![step("buildifier", &["."])]),

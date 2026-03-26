@@ -9,7 +9,7 @@ use std::thread;
 use std::time::Duration;
 
 use anyhow::{bail, Context, Result};
-use project_detect::{detect_node_workspace, NodePM, ProjectKind, WorkspacePackage};
+use project_detect::{detect_node_workspace, KotlinBuild, NodePM, ProjectKind, WorkspacePackage};
 
 use crate::runner::{self, step, Step};
 
@@ -37,6 +37,15 @@ fn single_dev_steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Go => Ok(vec![step("go", &["run", "."])]),
         ProjectKind::Elixir { .. } => Ok(vec![step("mix", &["run"])]),
         ProjectKind::Python { uv } => python_dev_steps(*uv),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => Ok(vec![step("./gradlew", &["run"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => Ok(vec![step("gradle", &["run"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => Ok(vec![step("mvn", &["compile", "exec:java"])]),
         ProjectKind::Gradle { wrapper: true } => Ok(vec![step("./gradlew", &["run"])]),
         ProjectKind::Gradle { wrapper: false } => Ok(vec![step("gradle", &["run"])]),
         ProjectKind::Maven => Ok(vec![step("mvn", &["compile", "exec:java"])]),
@@ -45,7 +54,10 @@ fn single_dev_steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["watch", "run"])]),
         ProjectKind::Zig => Ok(vec![step("zig", &["build", "run"])]),
         ProjectKind::Make => Ok(vec![step("make", &["run"])]),
-        ProjectKind::Meson | ProjectKind::CMake => {
+        ProjectKind::Xcode { .. }
+        | ProjectKind::Meson
+        | ProjectKind::CMake
+        | ProjectKind::R { .. } => {
             bail!(
                 "uu can't auto-dev {} projects — use `uu run` after building",
                 kind.label()

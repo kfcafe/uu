@@ -36,13 +36,15 @@ $ uu doctor                   $ uu test
   ✓ cargo-clippy
 ```
 
-It works across 14 ecosystems. No config files. No setup. `cd` into a project and go.
+It works across 32 project types. No config files. No setup. `cd` into a project and go.
 
 ## Install
 
 ```sh
-cargo install --git https://github.com/kfcafe/uu
+cargo install univ-utils
 ```
+
+The published package is `univ-utils`. The installed command is still `uu`.
 
 <details>
 <summary>Build from source</summary>
@@ -93,7 +95,7 @@ Run specific packages with `uu dev api web`. Add `-o` to open the first localhos
 
 ## Map
 
-`uu map` is a codebase intelligence tool. It uses tree-sitter to parse your source code and extract a structured manifest of every type, function, module, route, model, and integration — across 11 languages and 16 frameworks.
+`uu map` is a codebase intelligence tool. It uses tree-sitter to parse your source code and extract a structured manifest of every type, function, module, route, model, and integration — across 12 languages and 16 frameworks.
 
 ### Generate a manifest
 
@@ -242,59 +244,72 @@ uu
 
 ## Supported Ecosystems
 
-`uu` detects projects by looking for build system files. When multiple are present, it picks the most specific one (Cargo.toml beats Makefile).
+`uu` detects projects by looking for build system files. When multiple are present, it picks the most specific one (Cargo.toml beats Makefile, Kotlin beats generic Gradle/Maven when `.kt` sources are present).
 
 | Priority | File | Ecosystem | `build` | `check` | `ci` | `install` | `test` | `run` | `dev` | `fmt` | `lint` |
 |:--------:|------|-----------|---------|---------|------|-----------|--------|-------|-------|-------|--------|
-| 1 | `Cargo.toml` | Rust | `cargo build` | `cargo check` | fmt‑check + clippy + test | `cargo install --path .` | `cargo test` | `cargo run` | `cargo run` | `cargo fmt` | `cargo clippy` |
+| 1 | `Cargo.toml` | Rust | `cargo build` | `cargo check` | fmt-check + clippy + test | `cargo install --path .` | `cargo test` | `cargo run` | `cargo run` | `cargo fmt` | `cargo clippy` |
 | 2 | `go.mod` | Go | `go build ./...` | `go test -run=^$ ./...` | gofmt check + vet + test | `go install ./...` | `go test ./...` | `go run .` | `go run .` | `gofmt -w .` | `go vet ./...` |
-| 3 | `mix.exs` | Elixir | `mix compile` | `mix compile --warnings-as-errors` | format‑check + compile + test | `mix deps.get` + `mix compile` | `mix test` | `mix run` | `mix run` | `mix format` | `mix compile --warnings-as-errors` |
-| 4 | `pyproject.toml` | Python | `python -m build` | — | ruff fmt‑check + check + pytest | `pip install .` | `pytest` | `python main.py` | `python main.py` | `ruff format .`¹ | `ruff check .`¹ |
-| 5 | `package.json` | Node.js | `npm run build`² | `npm run typecheck`² | lint + test² | `npm install`²³ | `npm test`² | `npm start`² | `npm run dev`²⁴ | `npm run format`² | `npm run lint`² |
-| 6 | `build.gradle` | Gradle | `./gradlew build`⁵ | `./gradlew build -x test`⁵ | `./gradlew check`⁵ | `./gradlew build`⁵ | `./gradlew test`⁵ | `./gradlew run`⁵ | `./gradlew run`⁵ | `./gradlew spotlessApply`⁵ | `./gradlew check`⁵ |
-| 7 | `pom.xml` | Maven | `mvn package` | `mvn -DskipTests package` | `mvn test` | `mvn install` | `mvn test` | — | — | — | — |
-| 8 | `Gemfile` | Ruby | `bundle exec rake build` | — | `bundle exec rake test` | `bundle install` | `bundle exec rake test` | `rubocop -a` | `rubocop -a` | `rubocop` | `rubocop` |
-| 9 | `Package.swift` | Swift | `swift build` | `swift build` | build + test | `swift build -c release` | `swift test` | `swift run` | `swift run` | — | — |
-| 10 | `build.zig` | Zig | `zig build` | `zig build` | fmt‑check + test | `zig build -Doptimize=ReleaseSafe` | `zig build test` | `zig build run` | `zig build run` | `zig fmt .` | — |
-| 11 | `*.csproj` | .NET | `dotnet build` | `dotnet build` | fmt‑check + build + test | `dotnet publish` | `dotnet test` | `dotnet run` | `dotnet watch run` | `dotnet format` | `dotnet format`⁶ |
-| 12 | `meson.build` | Meson | `meson setup` + `compile` | `meson compile` | `meson test` | `meson setup` + `install` | `meson test` | — | — | — | — |
-| 13 | `CMakeLists.txt` | CMake | `cmake -B` + `--build` | `cmake -B` + `--build` | `ctest` | `cmake` build + install | `ctest` | — | — | — | — |
-| 14 | `Makefile` | Make | `make` | `make` | `make test` | `make && make install` | `make test` | `make run` | `make run` | — | — |
-
-¹ Falls back to `black`/`flake8` if ruff is not installed.
-² Detects your package manager from lockfile: npm, yarn, pnpm, or bun.
-³ If package.json has a `bin` field, also runs `<pm> link` to make the CLI available on PATH.
-⁴ Workspace-aware: in monorepos, runs all packages' `dev` scripts concurrently.
-⁵ Uses `./gradlew` wrapper if present, falls back to `gradle`.
-⁶ Uses `dotnet format --verify-no-changes` for lint (style check mode).
+| 3 | `mix.exs` | Elixir | `mix compile` | `mix compile --warnings-as-errors` | format-check + compile + test | `mix deps.get` + compile | `mix test` | `mix run` | `mix run` | `mix format` | `mix compile --warnings-as-errors` |
+| 4 | `pyproject.toml` / `setup.py` / `setup.cfg` | Python | `python -m build` / `uv run python -m build` | — | ruff/black + pytest | `pip install .` / `uv tool install .` | `pytest` / `uv run pytest` | `main.py` / `app.py` / `manage.py` | same as `run` | `ruff format` / `black` | `ruff check` / `flake8` |
+| 5 | `package.json` | Node.js | `<pm> run build` | `<pm> run typecheck` | `<pm> run lint` + `test` | `<pm> install` (+ `link` for `bin`) | `<pm> test` | `<pm> start` | workspace-aware `<pm> run dev` | `<pm> run format` | `<pm> run lint` |
+| 6 | `build.gradle(.kts)` or `pom.xml` + Kotlin sources | Kotlin | `gradle build` / `mvn package` | `gradle build -x test` / `mvn -DskipTests package` | `gradle check` / `mvn test` | `gradle build` / `mvn install` | `gradle test` / `mvn test` | `gradle run` / `mvn compile exec:java` | same as `run` | `spotlessApply` / — | `gradle check` / — |
+| 7 | `build.gradle` / `build.gradle.kts` | Gradle | `gradle build` | `gradle build -x test` | `gradle check` | `gradle build` | `gradle test` | `gradle run` | `gradle run` | `spotlessApply` | `gradle check` |
+| 8 | `pom.xml` | Maven | `mvn package` | `mvn -DskipTests package` | `mvn test` | `mvn install` | `mvn test` | `mvn compile exec:java` | `mvn compile exec:java` | — | — |
+| 9 | `build.sbt` | Scala | `sbt compile` | `sbt compile` | `sbt scalafmtCheckAll` + `test` | `sbt package` | `sbt test` | `sbt run` | `sbt ~run` | `sbt scalafmtAll` | — |
+| 10 | `Gemfile` | Ruby | `bundle exec rake build` | — | `bundle exec rake test` | `bundle install` | `bundle exec rake test` | `bundle exec ruby app.rb` | `bundle exec ruby app.rb` | `rubocop -a` | `rubocop` |
+| 11 | `Package.swift` | Swift | `swift build` | `swift build` | build + test | `swift build -c release` | `swift test` | `swift run` | `swift run` | — | — |
+| 12 | `*.xcworkspace` / `*.xcodeproj` | Xcode | `xcodebuild build` | `xcodebuild build` | `xcodebuild build` + `test` | `xcodebuild -configuration Release build` | `xcodebuild test` | — | — | — | `xcodebuild analyze` |
+| 13 | `build.zig` | Zig | `zig build` | `zig build` | `zig fmt --check .` + `zig build test` | `zig build -Doptimize=ReleaseSafe` | `zig build test` | `zig build run` | `zig build run` | `zig fmt .` | — |
+| 14 | `*.csproj` / `*.sln` | .NET | `dotnet build` | `dotnet build --no-restore` | `dotnet format --verify-no-changes` + build + test | `dotnet publish -c Release` | `dotnet test` | `dotnet run` | `dotnet watch run` | `dotnet format` | `dotnet format --verify-no-changes` |
+| 15 | `composer.json` | PHP | — | — | `vendor/bin/phpunit` | `composer install` | `vendor/bin/phpunit` | `php -S localhost:8000` | `php -S localhost:8000` | — | `vendor/bin/phpstan analyse` |
+| 16 | `pubspec.yaml` | Dart / Flutter | `dart compile exe bin/main.dart` / `flutter build` | `dart analyze` | `dart format --set-exit-if-changed .` + analyze + test | `dart pub get` / `flutter pub get` | `dart test` / `flutter test` | `dart run` / `flutter run` | same as `run` | `dart format .` | `dart analyze` |
+| 17 | `stack.yaml` / `*.cabal` | Haskell | `stack build` / `cabal build` | `stack build --fast` / `cabal build` | build + test | `stack install` / `cabal install` | `stack test` / `cabal test` | `stack run` / `cabal run` | same as `run` | — | `hlint .` |
+| 18 | `project.clj` / `deps.edn` | Clojure | `lein compile` / `clj -T:build` | — | `lein test` / `clj -M:test` | `lein install` / `clj -T:build install` | `lein test` / `clj -M:test` | `lein run` / `clj -M -m main` | same as `run` | — | `lein eastwood` / — |
+| 19 | `rebar.config` | Erlang | `rebar3 compile` | `rebar3 compile` | compile + eunit | `rebar3 get-deps` + compile | `rebar3 eunit` | `rebar3 shell` | `rebar3 shell` | — | `rebar3 dialyzer` |
+| 20 | `dune-project` | OCaml | `dune build` | `dune build` | build + test | `dune build` + `dune install` | `dune test` | `dune exec .` | `dune exec .` | `dune fmt` | — |
+| 21 | `cpanfile` / `Makefile.PL` | Perl | `perl Makefile.PL` + `make` | — | `prove -l` | `cpanm --installdeps .` | `prove -l` | `perl app.pl` | `perl app.pl` | — | `perlcritic .` |
+| 22 | `Project.toml` | Julia | — | — | `Pkg.test()` | `Pkg.instantiate()` | `Pkg.test()` | `julia --project src/main.jl` | `julia --project src/main.jl` | — | — |
+| 23 | `DESCRIPTION` / `renv.lock` | R | `R CMD build .` | — | `R CMD check --no-manual .` | `R CMD INSTALL .` | `R CMD check --no-manual .` | — | — | — | — |
+| 24 | `*.nimble` | Nim | `nimble build` | `nimble check` | `nimble test` | `nimble install` | `nimble test` | `nimble run` | `nimble run` | — | `nimble check` |
+| 25 | `shard.yml` | Crystal | `shards build` | `crystal build --no-codegen` | `crystal spec` | `shards install` | `crystal spec` | `crystal run src/main.cr` | `crystal run src/main.cr` | `crystal tool format .` | — |
+| 26 | `v.mod` | V | `v .` | `v .` | `v test .` | `v install .` | `v test .` | `v run .` | `v run .` | `v fmt .` | — |
+| 27 | `gleam.toml` | Gleam | `gleam build` | `gleam check` | `gleam test` | `gleam deps download` | `gleam test` | `gleam run` | `gleam run` | `gleam format` | — |
+| 28 | `*.rockspec` | Lua | — | — | `luarocks test` | `luarocks install --deps-only .` | `luarocks test` | `lua init.lua` | `lua init.lua` | — | — |
+| 29 | `MODULE.bazel` / `WORKSPACE` | Bazel | `bazel build //...` | `bazel build //...` | `bazel test //...` | `bazel build //...` | `bazel test //...` | `bazel run //:main` | `bazel run //:main` | `buildifier .` | `bazel test //...` |
+| 30 | `meson.build` | Meson | `meson setup builddir` + compile | `meson compile -C builddir` | `meson test -C builddir` | setup + compile + install | `meson test -C builddir` | — | — | — | — |
+| 31 | `CMakeLists.txt` | CMake | `cmake -B build` + `--build` | `cmake -B build` + `--build` | `ctest --test-dir build` | `cmake --install build` | `ctest --test-dir build` | — | — | — | — |
+| 32 | `Makefile` | Make | `make` | `make` | `make test` | `make && make install` | `make test` | `make run` | `make run` | — | — |
 
 > [!NOTE]
-> Python auto-detects `uv` and uses it when available. Ecosystems without a standard typecheck (Python, Ruby) bail with a suggestion instead of failing silently. Node.js `uu build` skips gracefully if no `build` script exists.
+> Python auto-detects `uv` and uses it when available. Node.js detects npm/yarn/pnpm/bun from lockfiles. Kotlin is detected ahead of generic Gradle/Maven when `uu` sees Kotlin source files. `run`/`dev` stay intentionally unsupported for Xcode and R because they need project-specific entrypoint or scheme selection.
 
 ## How It Works
 
 `uu` is three crates:
 
-- **[`project-detect`](crates/detect/)** — standalone project detection library ([publishable independently](https://github.com/kfcafe/project-detect)). Scans a directory for build system files (`Cargo.toml`, `go.mod`, `package.json`, etc.) and returns a `ProjectKind` with ecosystem-specific metadata. When multiple files exist, language-specific ones win over generic build systems.
+- **[`project-detect`](https://github.com/kfcafe/project-detect)** — standalone project detection library. Scans a directory for build system files (`Cargo.toml`, `go.mod`, `package.json`, etc.) and returns a `ProjectKind` with ecosystem-specific metadata. When multiple files exist, language-specific ones win over generic build systems.
 - **`uu-manifest`** — the map engine. Uses tree-sitter to parse source files via language and framework adapters. Produces a structured manifest of types, functions, modules, routes, models, and integrations. Supports diffing between manifests.
-- **`uu`** — the CLI binary. Each command maps the detected `ProjectKind` to the right shell command and runs it. The `map` command adds subcommands for querying and exploring the manifest interactively.
+- **`univ-utils`** — the published package that installs the `uu` CLI binary. Each command maps the detected `ProjectKind` to the right shell command and runs it. The `map` command adds subcommands for querying and exploring the manifest interactively.
 
 The detection library is the engine. Add a new ecosystem once and every command learns it automatically.
 
 ```
 uu/
 ├── crates/
-│   ├── detect/       project-detect — standalone project detection library
 │   ├── manifest/     Tree-sitter manifest generator (12 languages, 16 frameworks)
-│   └── uu/           CLI binary
+│   └── uu/           `univ-utils` package, installs the `uu` CLI
 └── README.md
+
+project-detect/
+└── src/lib.rs        standalone detection library used by uu
 ```
 
 ## Contributing
 
-1. Add a variant to `ProjectKind` in `crates/detect/src/lib.rs`
-2. Add detection logic in `detect()`
-3. Add the build/install/run/test/fmt/lint/ci/clean steps in each command module
+1. Add a variant to `ProjectKind` in `project-detect/src/lib.rs`
+2. Add detection logic in `project-detect/src/lib.rs` (`detect()` / `detect_in()`)
+3. Add the build/install/run/test/fmt/lint/ci/clean steps in each `crates/uu/src/cmd/*.rs` module
 4. To add a new language adapter: create `crates/manifest/src/adapters/lang/<name>.rs` implementing the `Adapter` trait
 5. To add a new framework adapter: create `crates/manifest/src/adapters/framework/<name>.rs`
 6. Verify: `cargo fmt --check && cargo clippy -- -D warnings && cargo test`

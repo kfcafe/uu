@@ -2,11 +2,14 @@
 name = "uu-manifest"
 version = "0.1.0"
 edition = "2021"
-description = "Project manifest generator for uu — universal utilities"
+description = "Project manifest generator for uu"
 license = "MIT"
+repository = "https://github.com/kfcafe/uu"
+keywords = ["code-intelligence", "manifest", "tree-sitter", "cli"]
+categories = ["development-tools", "parser-implementations"]
 
 [dependencies]
-project-detect = { path = "/Users/asher/project-detect" }
+project-detect = { version = "0.1.2", path = "/Users/asher/project-detect" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"

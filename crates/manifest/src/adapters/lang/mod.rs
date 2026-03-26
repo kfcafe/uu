@@ -11,3 +11,4 @@ pub mod ruby;
 pub mod rust;
 pub mod swift;
 pub mod typescript;
+pub mod zig;

@@ -1,7 +1,9 @@
 //! `uu doctor` — show detected project and check required external tools.
 
 use anyhow::Result;
-use project_detect::{command_on_path, detect_walk, supported_table, NodePM, ProjectKind};
+use project_detect::{
+    command_on_path, detect_walk, supported_table, KotlinBuild, NodePM, ProjectKind,
+};
 
 use crate::runner::{self, style};
 
@@ -12,18 +14,30 @@ fn required_tools(kind: &ProjectKind) -> Vec<&'static str> {
         ProjectKind::Go => vec!["go", "gofmt"],
         ProjectKind::Elixir { .. } => vec!["mix"],
         ProjectKind::Python { uv: true, .. } => vec!["uv", runner::python_cmd(), "pytest", "ruff"],
-        ProjectKind::Python { uv: false, .. } => vec!["pip", runner::python_cmd(), "pytest", "ruff"],
+        ProjectKind::Python { uv: false, .. } => {
+            vec!["pip", runner::python_cmd(), "pytest", "ruff"]
+        }
         ProjectKind::Node { manager } => match manager {
             NodePM::Bun => vec!["bun"],
             NodePM::Pnpm => vec!["pnpm"],
             NodePM::Yarn => vec!["yarn"],
             NodePM::Npm => vec!["npm"],
         },
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => vec!["java"],
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => vec!["gradle", "java"],
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => vec!["mvn", "java"],
         ProjectKind::Gradle { wrapper: true } => vec!["java"],
         ProjectKind::Gradle { wrapper: false } => vec!["gradle", "java"],
         ProjectKind::Maven => vec!["mvn", "java"],
         ProjectKind::Ruby => vec!["bundle", "ruby", "rubocop"],
         ProjectKind::Swift => vec!["swift"],
+        ProjectKind::Xcode { .. } => vec!["xcodebuild"],
         ProjectKind::DotNet { .. } => vec!["dotnet"],
         ProjectKind::Meson => vec!["meson", "ninja"],
         ProjectKind::CMake => vec!["cmake", "ctest"],
@@ -41,6 +55,7 @@ fn required_tools(kind: &ProjectKind) -> Vec<&'static str> {
         ProjectKind::Dune => vec!["dune", "ocaml"],
         ProjectKind::Perl => vec!["perl", "cpanm"],
         ProjectKind::Julia => vec!["julia"],
+        ProjectKind::R { .. } => vec!["R", "Rscript"],
         ProjectKind::Nim => vec!["nim", "nimble"],
         ProjectKind::Crystal => vec!["crystal", "shards"],
         ProjectKind::Vlang => vec!["v"],

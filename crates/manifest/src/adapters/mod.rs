@@ -54,6 +54,7 @@ pub fn all_adapters() -> Vec<Box<dyn Adapter>> {
         Box::new(lang::swift::SwiftAdapter),
         Box::new(lang::csharp::CSharpAdapter),
         Box::new(lang::c_cpp::CCppAdapter),
+        Box::new(lang::zig::ZigAdapter),
         Box::new(framework::nextjs::NextJsAdapter),
         Box::new(framework::express::ExpressAdapter),
         Box::new(framework::prisma::PrismaAdapter),

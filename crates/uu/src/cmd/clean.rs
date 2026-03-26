@@ -7,7 +7,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result};
-use project_detect::ProjectKind;
+use project_detect::{KotlinBuild, ProjectKind};
 
 use crate::runner::{self, style};
 
@@ -98,11 +98,21 @@ fn native_clean_cmd(kind: &ProjectKind) -> Option<(&'static str, Vec<&'static st
     match kind {
         ProjectKind::Cargo => Some(("cargo", vec!["clean"])),
         ProjectKind::Go => Some(("go", vec!["clean"])),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => Some(("./gradlew", vec!["clean"])),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => Some(("gradle", vec!["clean"])),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => Some(("mvn", vec!["clean"])),
         ProjectKind::Gradle { wrapper: true } => Some(("./gradlew", vec!["clean"])),
         ProjectKind::Gradle { wrapper: false } => Some(("gradle", vec!["clean"])),
         ProjectKind::Maven => Some(("mvn", vec!["clean"])),
         ProjectKind::Make => Some(("make", vec!["clean"])),
         ProjectKind::Swift => Some(("swift", vec!["package", "clean"])),
+        ProjectKind::Xcode { .. } => Some(("xcodebuild", vec!["clean"])),
         ProjectKind::DotNet { .. } => Some(("dotnet", vec!["clean"])),
         ProjectKind::Sbt => Some(("sbt", vec!["clean"])),
         ProjectKind::Haskell { stack: true } => Some(("stack", vec!["clean"])),

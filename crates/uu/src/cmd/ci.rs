@@ -4,7 +4,7 @@
 //! Designed for CI gates and pre-push checks.
 
 use anyhow::{bail, Result};
-use project_detect::{command_on_path, NodePM, ProjectKind};
+use project_detect::{command_on_path, KotlinBuild, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -74,11 +74,24 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             };
             Ok(vec![step(cmd, &["run", "lint"]), step(cmd, &["test"])])
         }
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => Ok(vec![step("./gradlew", &["check"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => Ok(vec![step("gradle", &["check"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => Ok(vec![step("mvn", &["test"])]),
         ProjectKind::Gradle { wrapper: true } => Ok(vec![step("./gradlew", &["check"])]),
         ProjectKind::Gradle { wrapper: false } => Ok(vec![step("gradle", &["check"])]),
         ProjectKind::Maven => Ok(vec![step("mvn", &["test"])]),
         ProjectKind::Ruby => Ok(vec![step("bundle", &["exec", "rake", "test"])]),
         ProjectKind::Swift => Ok(vec![step("swift", &["build"]), step("swift", &["test"])]),
+        ProjectKind::Xcode { .. } => Ok(vec![
+            step("xcodebuild", &["build"]),
+            step("xcodebuild", &["test"]),
+        ]),
         ProjectKind::DotNet { .. } => Ok(vec![
             step("dotnet", &["format", "--verify-no-changes"]),
             step("dotnet", &["build"]),
@@ -97,15 +110,29 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             step("dart", &["analyze"]),
             step("dart", &["test"]),
         ]),
-        ProjectKind::Sbt => Ok(vec![step("sbt", &["scalafmtCheckAll"]), step("sbt", &["test"])]),
-        ProjectKind::Haskell { stack: true } => Ok(vec![step("stack", &["build"]), step("stack", &["test"])]),
-        ProjectKind::Haskell { stack: false } => Ok(vec![step("cabal", &["build"]), step("cabal", &["test"])]),
+        ProjectKind::Sbt => Ok(vec![
+            step("sbt", &["scalafmtCheckAll"]),
+            step("sbt", &["test"]),
+        ]),
+        ProjectKind::Haskell { stack: true } => {
+            Ok(vec![step("stack", &["build"]), step("stack", &["test"])])
+        }
+        ProjectKind::Haskell { stack: false } => {
+            Ok(vec![step("cabal", &["build"]), step("cabal", &["test"])])
+        }
         ProjectKind::Clojure { lein: true } => Ok(vec![step("lein", &["test"])]),
         ProjectKind::Clojure { lein: false } => Ok(vec![step("clj", &["-M:test"])]),
-        ProjectKind::Rebar => Ok(vec![step("rebar3", &["compile"]), step("rebar3", &["eunit"])]),
+        ProjectKind::Rebar => Ok(vec![
+            step("rebar3", &["compile"]),
+            step("rebar3", &["eunit"]),
+        ]),
         ProjectKind::Dune => Ok(vec![step("dune", &["build"]), step("dune", &["test"])]),
         ProjectKind::Perl => Ok(vec![step("prove", &["-l"])]),
-        ProjectKind::Julia => Ok(vec![step("julia", &["--project", "-e", "using Pkg; Pkg.test()"])]),
+        ProjectKind::Julia => Ok(vec![step(
+            "julia",
+            &["--project", "-e", "using Pkg; Pkg.test()"],
+        )]),
+        ProjectKind::R { .. } => Ok(vec![step("R", &["CMD", "check", "--no-manual", "."])]),
         ProjectKind::Nim => Ok(vec![step("nimble", &["test"])]),
         ProjectKind::Crystal => Ok(vec![step("crystal", &["spec"])]),
         ProjectKind::Vlang => Ok(vec![step("v", &["test", "."])]),

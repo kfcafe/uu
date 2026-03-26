@@ -1,7 +1,7 @@
 //! `uu lint` — detect project type and run the linter.
 
 use anyhow::{bail, Result};
-use project_detect::{command_on_path, NodePM, ProjectKind};
+use project_detect::{command_on_path, KotlinBuild, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -48,6 +48,18 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             };
             Ok(vec![step(cmd, &["run", "lint"])])
         }
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => Ok(vec![step("./gradlew", &["check"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => Ok(vec![step("gradle", &["check"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => bail!(
+            "Kotlin (Maven) has no built-in linter\n\n  \
+             try: mvn checkstyle:check"
+        ),
         ProjectKind::Gradle { wrapper: true } => Ok(vec![step("./gradlew", &["check"])]),
         ProjectKind::Gradle { wrapper: false } => Ok(vec![step("gradle", &["check"])]),
         ProjectKind::Maven => bail!(
@@ -59,6 +71,7 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             "Swift has no built-in linter\n\n  \
              try: swiftlint    # brew install swiftlint"
         ),
+        ProjectKind::Xcode { .. } => Ok(vec![step("xcodebuild", &["analyze"])]),
         ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["format", "--verify-no-changes"])]),
         ProjectKind::Meson => bail!("Meson has no built-in linter"),
         ProjectKind::CMake => bail!(
@@ -75,9 +88,15 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::Perl => Ok(vec![step("perlcritic", &["."])]),
         ProjectKind::Nim => Ok(vec![step("nimble", &["check"])]),
         ProjectKind::Bazel => Ok(vec![step("bazel", &["test", "//..."])]),
-        ProjectKind::Sbt | ProjectKind::Clojure { lein: false } | ProjectKind::Dune
-        | ProjectKind::Julia | ProjectKind::Crystal | ProjectKind::Vlang
-        | ProjectKind::Gleam | ProjectKind::Lua => {
+        ProjectKind::Sbt
+        | ProjectKind::Clojure { lein: false }
+        | ProjectKind::Dune
+        | ProjectKind::Julia
+        | ProjectKind::R { .. }
+        | ProjectKind::Crystal
+        | ProjectKind::Vlang
+        | ProjectKind::Gleam
+        | ProjectKind::Lua => {
             bail!("{} has no built-in linter", kind.label())
         }
     }

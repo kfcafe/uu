@@ -3,7 +3,7 @@
 use std::env;
 
 use anyhow::{bail, Result};
-use project_detect::{NodePM, ProjectKind};
+use project_detect::{KotlinBuild, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
 
@@ -24,6 +24,15 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
             };
             Ok(vec![step(cmd, &["start"])])
         }
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: true },
+        } => Ok(vec![step("./gradlew", &["run"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Gradle { wrapper: false },
+        } => Ok(vec![step("gradle", &["run"])]),
+        ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        } => Ok(vec![step("mvn", &["compile", "exec:java"])]),
         ProjectKind::Gradle { wrapper: true } => Ok(vec![step("./gradlew", &["run"])]),
         ProjectKind::Gradle { wrapper: false } => Ok(vec![step("gradle", &["run"])]),
         ProjectKind::Maven => Ok(vec![step("mvn", &["compile", "exec:java"])]),
@@ -32,7 +41,10 @@ fn steps(kind: &ProjectKind) -> Result<Vec<Step>> {
         ProjectKind::DotNet { .. } => Ok(vec![step("dotnet", &["run"])]),
         ProjectKind::Zig => Ok(vec![step("zig", &["build", "run"])]),
         ProjectKind::Make => Ok(vec![step("make", &["run"])]),
-        ProjectKind::Meson | ProjectKind::CMake => {
+        ProjectKind::Xcode { .. }
+        | ProjectKind::Meson
+        | ProjectKind::CMake
+        | ProjectKind::R { .. } => {
             bail!(
                 "uu can't auto-run {} projects — run the built binary directly",
                 kind.label()
@@ -123,6 +135,16 @@ mod tests {
         let s = steps(&ProjectKind::DotNet { sln: false }).unwrap();
         assert_eq!(s[0].program, "dotnet");
         assert_eq!(s[0].args, ["run"]);
+    }
+
+    #[test]
+    fn kotlin_run() {
+        let s = steps(&ProjectKind::Kotlin {
+            build: KotlinBuild::Maven,
+        })
+        .unwrap();
+        assert_eq!(s[0].program, "mvn");
+        assert_eq!(s[0].args, ["compile", "exec:java"]);
     }
 
     #[test]
