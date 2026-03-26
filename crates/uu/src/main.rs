@@ -7,8 +7,7 @@ use std::process;
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
 
-/// Universal utilities — zero-config developer tools that detect your project
-/// and do the right thing.
+/// Zero-config project tools for common tasks across many ecosystems.
 ///
 /// Run `uu install` in a Rust project and it runs `cargo install --path .`.
 /// Run `uu test` in a Node project and it runs `npm test`. No config needed.
@@ -47,9 +46,6 @@ enum Commands {
 
     /// Run the linter
     Lint(ProjectArgs),
-
-    /// Generate a project manifest (types, functions, routes, models)
-    Map(cmd::map::MapArgs),
 
     /// List or kill processes by port
     Ports(PortsArgs),
@@ -147,7 +143,6 @@ fn main() {
         Commands::Lint(a) => {
             chdir(&a.directory).and_then(|()| cmd::lint::execute(a.dry_run, a.args))
         }
-        Commands::Map(a) => cmd::map::execute(a),
         Commands::Ports(a) => cmd::ports::execute(a.port, a.kill),
         Commands::Run(a) => chdir(&a.directory).and_then(|()| cmd::run::execute(a.dry_run, a.args)),
         Commands::Test(a) => {

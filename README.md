@@ -1,6 +1,6 @@
 <div align="center">
   <h1>uu</h1>
-  <p><strong>One command for every project. Zero config.</strong></p>
+  <p><strong>One command for common project tasks. Zero config.</strong></p>
 
   <p>
     <a href="https://www.rust-lang.org/"><img alt="Rust" src="https://img.shields.io/badge/rust-stable-orange?logo=rust&logoColor=white"></a>
@@ -11,7 +11,6 @@
   <p>
     <a href="#install">Install</a> ·
     <a href="#commands">Commands</a> ·
-    <a href="#map">Map</a> ·
     <a href="#supported-ecosystems">Ecosystems</a> ·
     <a href="#how-it-works">How It Works</a>
   </p>
@@ -19,9 +18,9 @@
 
 ---
 
-You shouldn't have to remember if it's `cargo install --path .` or `go install ./...` or `pip install .`. You shouldn't have to google `lsof` flags every time port 3000 is stuck.
+You shouldn't have to remember if this repo wants `cargo test`, `go test ./...`, `dotnet test`, `gradle check`, or `dart analyze`.
 
-`uu` detects your project and runs the right thing.
+`uu` detects the project and runs the right thing.
 
 ```
 $ uu install                  $ uu clean
@@ -64,15 +63,14 @@ Every command auto-detects your project type. Pass extra arguments after `--`. U
 | Command | What it does |
 |---------|-------------|
 | `uu build` | Compile the project |
-| `uu check` | Typecheck without running tests — faster feedback loop |
-| `uu ci` | Full CI pipeline: format check → lint → test (stops on first failure) |
-| `uu clean` | Remove build artifacts, show how much space you get back |
-| `uu dev` | Start dev servers — workspace-aware, runs packages concurrently |
+| `uu check` | Typecheck without running tests |
+| `uu ci` | Run the CI pipeline: format check → lint → test |
+| `uu clean` | Remove build artifacts and show how much space you get back |
+| `uu dev` | Start dev servers — workspace-aware when possible |
 | `uu doctor` | Check that required tools are installed |
 | `uu fmt` | Auto-format code |
-| `uu install` | Install the project (and link binaries for Node.js `bin` packages) |
+| `uu install` | Install the project |
 | `uu lint` | Run the linter |
-| `uu map` | Generate and explore a project manifest — [see below](#map) |
 | `uu ports` | See what's listening on every port — kill with `uu ports 3000 -k` |
 | `uu run` | Run the project |
 | `uu test` | Run the test suite |
@@ -92,155 +90,6 @@ $ uu dev
 ```
 
 Run specific packages with `uu dev api web`. Add `-o` to open the first localhost URL in your browser.
-
-## Map
-
-`uu map` is a codebase intelligence tool. It uses tree-sitter to parse your source code and extract a structured manifest of every type, function, module, route, model, and integration — across 12 languages and 16 frameworks.
-
-### Generate a manifest
-
-```sh
-uu map                      # writes .map.yaml
-uu map --format json        # writes .map.json
-uu map --format md          # writes .map.md (readable markdown)
-uu map --stdout             # print to stdout instead of file
-uu map --diff               # show what changed since last generation
-uu map -n                   # dry run — show counts without writing
-```
-
-### Query a symbol
-
-Look up any type, function, module, or route by name. Shows fields, methods, source location, trait implementations, and cross-references.
-
-```
-$ uu map query Manifest
-type Manifest (struct)
-  source: crates/manifest/src/schema.rs:18
-  fields:
-    project: ProjectMeta
-    types: BTreeMap<String, TypeDef>
-    functions: BTreeMap<String, Function>
-    modules: BTreeMap<String, Module>
-    routes: BTreeMap<String, Route>
-    ...
-
-$ uu map query Adapter --refs
-type Adapter (trait)
-  source: crates/manifest/src/adapters/mod.rs:25
-  methods: name, detect, extract, priority, layer
-
-  referenced by:
-    fn all_adapters
-    type RustAdapter
-    type GoAdapter
-    type PythonAdapter
-    ...
-```
-
-Typo? It suggests corrections:
-
-```
-$ uu map query Manifes
-No symbol found matching 'Manifes'
-Did you mean:
-  Manifest
-  ManifestDiff
-  ManifestFragment
-```
-
-### Search across symbols
-
-Find everything related to a concept across the entire project:
-
-```
-$ uu map search auth
-Found 8 matches for 'auth':
-
-  Types:
-    AuthConfig          (struct, 2 fields)    src/schema.rs:271
-    AuthJsAdapter       (struct, 5 methods)   src/adapters/framework/authjs.rs:9
-  Functions:
-    authenticate        (pub fn ...)          src/auth.rs:15
-  Routes:
-    [POST] /api/auth/login                    src/routes/auth.rs
-```
-
-Filter by category with `-c`:
-
-```sh
-uu map search detect -c fn      # only functions
-uu map search user -c types     # only types
-```
-
-### Codebase statistics
-
-```
-$ uu map stats
-Project: uu (Rust)
-
-Summary
-  Types:      58
-  Functions:  40
-  Modules:    57
-
-Visibility
-  Types:     52 public, 6 internal, 0 private
-  Functions: 19 public, 21 internal, 0 private
-
-Type breakdown
-  Structs          50
-  Enums             7
-  Traits            1
-
-Top modules by symbol count
-  manifest::schema        18 types, 2 functions
-  detect::lib              3 types, 9 functions
-  uu::runner               1 type, 5 functions
-
-Traits
-  Adapter → RustAdapter, GoAdapter, PythonAdapter, ...
-```
-
-### Module tree
-
-```
-$ uu map tree
-uu (Rust)
-detect
-└── lib (3 types, 9 fns)
-manifest
-├── adapters (2 types, 1 fn)
-│   ├── framework
-│   │   ├── aspnet (1 type)
-│   │   ├── axum (1 type)
-│   │   └── ... (13 more)
-│   └── lang
-│       ├── rust (1 type)
-│       ├── go (1 type)
-│       └── ... (9 more)
-├── context (1 type, 1 fn)
-├── diff (2 types, 3 fns)
-└── schema (18 types, 2 fns)
-uu
-├── cmd
-│   ├── map (2 types)
-│   │   ├── format (15 fns)
-│   │   ├── generate (1 type)
-│   │   ├── query (1 type)
-│   │   └── ...
-│   └── ... (10 more)
-└── runner (1 type, 5 fns)
-
-57 modules, 58 types, 40 functions
-```
-
-### Supported languages & frameworks
-
-`uu map` uses tree-sitter for accurate AST-level extraction — no regex, no guessing.
-
-**Languages:** Rust, Go, Python, TypeScript, JavaScript, Elixir, Java, Ruby, Swift, C#, C/C++, Zig
-
-**Frameworks:** Next.js, Express, Prisma, shadcn/ui, Auth.js, Axum, Django, FastAPI, Phoenix, Ecto, Rails, Spring, Gin, GORM, ASP.NET
 
 ## Supported Ecosystems
 
@@ -286,30 +135,17 @@ uu
 
 ## How It Works
 
-`uu` is three crates:
+`uu` is intentionally simple:
 
-- **[`project-detect`](https://github.com/kfcafe/project-detect)** — standalone project detection library. Scans a directory for build system files (`Cargo.toml`, `go.mod`, `package.json`, etc.) and returns a `ProjectKind` with ecosystem-specific metadata. When multiple files exist, language-specific ones win over generic build systems.
-- **`uu-manifest`** — the map engine. Uses tree-sitter to parse source files via language and framework adapters. Produces a structured manifest of types, functions, modules, routes, models, and integrations. Supports diffing between manifests.
-- **`univ-utils`** — the published package that installs the `uu` CLI binary. Each command maps the detected `ProjectKind` to the right shell command and runs it. The `map` command adds subcommands for querying and exploring the manifest interactively.
+- **[`project-detect`](https://github.com/kfcafe/project-detect)** identifies what kind of project you're in
+- **`univ-utils`** maps that project kind to the right shell commands for common tasks
+- the **`uu`** binary executes those commands, with consistent dry-run and directory handling
 
-The detection library is the engine. Add a new ecosystem once and every command learns it automatically.
-
-```
-uu/
-├── crates/
-│   ├── manifest/     Tree-sitter manifest generator (12 languages, 16 frameworks)
-│   └── uu/           `univ-utils` package, installs the `uu` CLI
-└── README.md
-
-project-detect/
-└── src/lib.rs        standalone detection library used by uu
-```
+The goal is not to become a new build system. The goal is to remove the friction of remembering how every ecosystem wants to be driven.
 
 ## Contributing
 
 1. Add a variant to `ProjectKind` in `project-detect/src/lib.rs`
 2. Add detection logic in `project-detect/src/lib.rs` (`detect()` / `detect_in()`)
 3. Add the build/install/run/test/fmt/lint/ci/clean steps in each `crates/uu/src/cmd/*.rs` module
-4. To add a new language adapter: create `crates/manifest/src/adapters/lang/<name>.rs` implementing the `Adapter` trait
-5. To add a new framework adapter: create `crates/manifest/src/adapters/framework/<name>.rs`
-6. Verify: `cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+4. Verify: `cargo fmt --check && cargo clippy -- -D warnings && cargo test`
