@@ -1,9 +1,10 @@
 [package]
 name = "univ-utils"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "Zero-config project tools for common tasks across many ecosystems"
 license = "MIT"
+readme = "README.md"
 repository = "https://github.com/kfcafe/uu"
 keywords = ["cli", "project", "build", "test", "tools"]
 categories = ["command-line-utilities", "development-tools"]
