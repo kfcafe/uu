@@ -38,7 +38,6 @@ You shouldn't have to remember whether a repo wants:
 - `uu doctor`
 - `uu fmt`
 - `uu install`
-- `uu install --default`
 - `uu lint`
 - `uu ports`
 - `uu run`
