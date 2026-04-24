@@ -60,7 +60,7 @@ cargo install --path crates/uu
 
 Every command auto-detects your project type. Pass extra arguments after `--`. Use `-n` / `--dry-run` to preview without executing.
 
-`uu install --default` is the explicit opt-in path for repos that want to make the freshly installed command win in your shell. Rust projects get a built-in user-local defaulting path; every supported ecosystem can also provide `tools/uu-post-install` or `tools/uu-post-install.sh` for project-specific defaulting.
+`uu install --default` is the explicit opt-in path for making freshly installed commands win in your shell. It does not run repo-controlled post-install scripts; defaulting is handled by built-in adapters that inspect package metadata, such as Cargo binary names, Node `package.json` `bin`, and Python `pyproject.toml` `[project.scripts]`.
 
 | Command | What it does |
 |---------|-------------|
@@ -72,7 +72,7 @@ Every command auto-detects your project type. Pass extra arguments after `--`. U
 | `uu doctor` | Check that required tools are installed |
 | `uu fmt` | Auto-format code |
 | `uu install` | Install the project |
-| `uu install --default` | Install the project, then make its command the default shell command when supported or when the repo provides a post-install hook |
+| `uu install --default` | Install the project, then make known installed commands the default shell commands when supported by a built-in adapter |
 | `uu lint` | Run the linter |
 | `uu ports` | See what's listening on every port — kill with `uu ports 3000 -k` |
 | `uu run` | Run the project |

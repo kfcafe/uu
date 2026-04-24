@@ -9,8 +9,9 @@ use clap::{Args, Parser, Subcommand};
 
 /// Zero-config project tools for common tasks across many ecosystems.
 ///
-/// Run `uu install` in a Rust project and it runs `cargo install --path .`,
-/// or `cargo install --path crates/uu` for this repo's workspace root.
+/// Run `uu install` in a Rust package and it runs `cargo install --path .`.
+/// Run `uu install` at a Rust workspace root and it installs the single
+/// installable workspace member when there is exactly one.
 /// Run `uu test` in a Node project and it runs `npm test`. No config needed.
 #[derive(Parser)]
 #[command(name = "uu", version, about)]

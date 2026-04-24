@@ -52,18 +52,74 @@ fn install_dry_run_cargo_workspace_uses_member_path() {
         "[workspace]\nmembers = [\"crates/uu\"]",
     )
     .unwrap();
-    fs::create_dir_all(dir.path().join("crates/uu")).unwrap();
+    fs::create_dir_all(dir.path().join("crates/uu/src")).unwrap();
     fs::write(
         dir.path().join("crates/uu/Cargo.toml"),
-        "[package]\nname = \"univ-utils\"",
+        "[package]\nname = \"univ-utils\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
     )
     .unwrap();
+    fs::write(dir.path().join("crates/uu/src/main.rs"), "fn main() {}\n").unwrap();
 
     uu().args(["install", "-n"])
         .current_dir(dir.path())
         .assert()
         .success()
         .stderr(predicate::str::contains("cargo install --path crates/uu"));
+}
+
+#[test]
+fn install_dry_run_cargo_workspace_with_multiple_bins_fails() {
+    let dir = tempdir().unwrap();
+    fs::write(
+        dir.path().join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/a\", \"crates/b\"]",
+    )
+    .unwrap();
+
+    for name in ["a", "b"] {
+        let crate_dir = dir.path().join("crates").join(name);
+        fs::create_dir_all(crate_dir.join("src")).unwrap();
+        fs::write(
+            crate_dir.join("Cargo.toml"),
+            format!("[package]\nname = \"{name}\"\nversion = \"0.1.0\"\nedition = \"2021\"\n"),
+        )
+        .unwrap();
+        fs::write(crate_dir.join("src/main.rs"), "fn main() {}\n").unwrap();
+    }
+
+    uu().args(["install", "-n"])
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("multiple installable members"))
+        .stderr(predicate::str::contains("a"))
+        .stderr(predicate::str::contains("b"));
+}
+
+#[test]
+fn install_dry_run_cargo_workspace_without_bin_fails() {
+    let dir = tempdir().unwrap();
+    fs::write(
+        dir.path().join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/lib\"]",
+    )
+    .unwrap();
+    let crate_dir = dir.path().join("crates/lib");
+    fs::create_dir_all(crate_dir.join("src")).unwrap();
+    fs::write(
+        crate_dir.join("Cargo.toml"),
+        "[package]\nname = \"lib\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+    )
+    .unwrap();
+    fs::write(crate_dir.join("src/lib.rs"), "pub fn x() {}\n").unwrap();
+
+    uu().args(["install", "-n"])
+        .current_dir(dir.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "no installable workspace member was found",
+        ));
 }
 
 #[test]
@@ -151,12 +207,13 @@ fn install_dry_run_workspace_with_extra_args() {
         "[workspace]\nmembers = [\"crates/uu\"]",
     )
     .unwrap();
-    fs::create_dir_all(dir.path().join("crates/uu")).unwrap();
+    fs::create_dir_all(dir.path().join("crates/uu/src")).unwrap();
     fs::write(
         dir.path().join("crates/uu/Cargo.toml"),
-        "[package]\nname = \"univ-utils\"",
+        "[package]\nname = \"univ-utils\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
     )
     .unwrap();
+    fs::write(dir.path().join("crates/uu/src/main.rs"), "fn main() {}\n").unwrap();
 
     uu().args(["install", "-n", "--", "--release"])
         .current_dir(dir.path())
@@ -168,9 +225,13 @@ fn install_dry_run_workspace_with_extra_args() {
 }
 
 #[test]
-fn install_default_dry_run_uses_hook_for_node() {
+fn install_default_dry_run_ignores_shell_hooks_for_node() {
     let dir = tempdir().unwrap();
-    fs::write(dir.path().join("package.json"), "{}").unwrap();
+    fs::write(
+        dir.path().join("package.json"),
+        r#"{ "name": "pkg", "bin": { "mycli": "cli.js" } }"#,
+    )
+    .unwrap();
     fs::create_dir(dir.path().join("tools")).unwrap();
     fs::write(dir.path().join("tools/uu-post-install.sh"), "#!/bin/sh\n").unwrap();
 
@@ -179,11 +240,13 @@ fn install_default_dry_run_uses_hook_for_node() {
         .assert()
         .success()
         .stderr(predicate::str::contains("npm install"))
-        .stderr(predicate::str::contains("bash tools/uu-post-install.sh"));
+        .stderr(predicate::str::contains("would default"))
+        .stderr(predicate::str::contains("mycli"))
+        .stderr(predicate::str::contains("uu-post-install").not());
 }
 
 #[test]
-fn install_default_dry_run_uses_hook_for_go() {
+fn install_default_dry_run_reports_unsupported_for_go() {
     let dir = tempdir().unwrap();
     fs::write(dir.path().join("go.mod"), "module x").unwrap();
     fs::create_dir(dir.path().join("tools")).unwrap();
@@ -194,7 +257,10 @@ fn install_default_dry_run_uses_hook_for_go() {
         .assert()
         .success()
         .stderr(predicate::str::contains("go install ./..."))
-        .stderr(predicate::str::contains("./tools/uu-post-install"));
+        .stderr(predicate::str::contains(
+            "defaulting is not yet supported for Go projects",
+        ))
+        .stderr(predicate::str::contains("uu-post-install").not());
 }
 
 #[test]
@@ -208,6 +274,23 @@ fn install_default_dry_run_cargo_keeps_builtin_defaulting() {
         .success()
         .stderr(predicate::str::contains("cargo install --path ."))
         .stderr(predicate::str::contains("would default"));
+}
+
+#[test]
+fn install_default_dry_run_uses_python_project_scripts() {
+    let dir = tempdir().unwrap();
+    fs::write(
+        dir.path().join("pyproject.toml"),
+        "[project.scripts]\npycli = \"pkg:main\"\n",
+    )
+    .unwrap();
+
+    uu().args(["install", "-n", "--default"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("would default"))
+        .stderr(predicate::str::contains("pycli"));
 }
 
 #[test]
