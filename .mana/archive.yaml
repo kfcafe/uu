@@ -42,3 +42,25 @@ units:
   kind: epic
   feature: false
   has_decisions: false
+- id: '11'
+  title: Publish updated univ-utils crate to crates.io
+  status: closed
+  priority: 1
+  labels:
+  - release
+  - crates.io
+  - uu
+  updated_at: '2026-04-24T06:18:04.453213Z'
+  has_verify: true
+  verify: cargo package -p univ-utils
+  created_at: '2026-04-24T06:13:30.007023Z'
+  attempts: 0
+  paths:
+  - crates/uu/Cargo.toml
+  - Cargo.toml
+  - crates/uu/src/cmd/install.rs
+  - crates/uu/tests/cli.rs
+  - README.md
+  kind: epic
+  feature: false
+  has_decisions: false

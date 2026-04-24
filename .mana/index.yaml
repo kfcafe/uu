@@ -368,9 +368,9 @@ units:
   has_decisions: false
 - id: '8'
   title: Fix uu install for Cargo workspace roots
-  status: open
+  status: in_progress
   priority: 2
-  updated_at: '2026-04-24T05:24:53.316441Z'
+  updated_at: '2026-04-24T05:35:51.378666Z'
   has_verify: true
   verify: cargo test -p univ-utils install
   created_at: '2026-04-24T05:12:00.960996Z'

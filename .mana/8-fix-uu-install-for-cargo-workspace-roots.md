@@ -2,10 +2,10 @@
 id: '8'
 title: Fix uu install for Cargo workspace roots
 slug: fix-uu-install-for-cargo-workspace-roots
-status: open
+status: in_progress
 priority: 2
 created_at: '2026-04-24T05:12:00.960996Z'
-updated_at: '2026-04-24T05:24:53.316441Z'
+updated_at: '2026-04-24T05:35:51.378666Z'
 notes: |-
   ---
   2026-04-24T05:17:16.918675+00:00
@@ -14,6 +14,10 @@ notes: |-
   ---
   2026-04-24T05:24:53.316431+00:00
   User rejected the repo-specific `crates/uu` special-case. Requirement clarified: `uu install` must remain project-agnostic. Need to replace the narrow fix with generic Cargo workspace handling (e.g. discover installable member packages/binaries from workspace metadata or manifest inspection) rather than hardcoding this repo layout.
+
+  ---
+  2026-04-24T05:35:51.378653+00:00
+  Replaced the repo-specific Cargo install logic with a project-agnostic workspace resolver. `uu install` now: uses `cargo install --path .` for package roots; at workspace roots, scans workspace members (including simple `members = ["dir/*"]` globs), selects the single installable binary package when exactly one exists, and otherwise errors clearly for zero or multiple candidates. Kept existing non-Cargo `--default` behavior intact. Added unit and CLI coverage for single-member workspaces, multiple installable members, no installable members, globbed members, and workspace extra args. Verified with `cargo fmt && cargo test -p univ-utils install && cargo clippy -p univ-utils -- -D warnings`.
 verify: cargo test -p univ-utils install
 verify_timeout: 120
 kind: job
