@@ -38,10 +38,15 @@ You shouldn't have to remember whether a repo wants:
 - `uu doctor`
 - `uu fmt`
 - `uu install`
+- `uu install --default`
 - `uu lint`
 - `uu ports`
 - `uu run`
 - `uu test`
+
+## Default installs
+
+`uu install --default` makes known freshly installed commands win in your shell when a built-in adapter supports the ecosystem. It does not run repo-controlled post-install scripts. Current defaulting adapters inspect package metadata such as Cargo binary names, Node `package.json` `bin`, and Python `pyproject.toml` `[project.scripts]`.
 
 ## Project
 
