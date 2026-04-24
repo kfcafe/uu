@@ -45,6 +45,28 @@ fn install_dry_run_cargo() {
 }
 
 #[test]
+fn install_dry_run_cargo_workspace_uses_member_path() {
+    let dir = tempdir().unwrap();
+    fs::write(
+        dir.path().join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/uu\"]",
+    )
+    .unwrap();
+    fs::create_dir_all(dir.path().join("crates/uu")).unwrap();
+    fs::write(
+        dir.path().join("crates/uu/Cargo.toml"),
+        "[package]\nname = \"univ-utils\"",
+    )
+    .unwrap();
+
+    uu().args(["install", "-n"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("cargo install --path crates/uu"));
+}
+
+#[test]
 fn install_dry_run_go() {
     let dir = tempdir().unwrap();
     fs::write(dir.path().join("go.mod"), "module x").unwrap();
@@ -119,6 +141,73 @@ fn install_dry_run_with_extra_args() {
         .assert()
         .success()
         .stderr(predicate::str::contains("cargo install --path . --release"));
+}
+
+#[test]
+fn install_dry_run_workspace_with_extra_args() {
+    let dir = tempdir().unwrap();
+    fs::write(
+        dir.path().join("Cargo.toml"),
+        "[workspace]\nmembers = [\"crates/uu\"]",
+    )
+    .unwrap();
+    fs::create_dir_all(dir.path().join("crates/uu")).unwrap();
+    fs::write(
+        dir.path().join("crates/uu/Cargo.toml"),
+        "[package]\nname = \"univ-utils\"",
+    )
+    .unwrap();
+
+    uu().args(["install", "-n", "--", "--release"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains(
+            "cargo install --path crates/uu --release",
+        ));
+}
+
+#[test]
+fn install_default_dry_run_uses_hook_for_node() {
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("package.json"), "{}").unwrap();
+    fs::create_dir(dir.path().join("tools")).unwrap();
+    fs::write(dir.path().join("tools/uu-post-install.sh"), "#!/bin/sh\n").unwrap();
+
+    uu().args(["install", "-n", "--default"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("npm install"))
+        .stderr(predicate::str::contains("bash tools/uu-post-install.sh"));
+}
+
+#[test]
+fn install_default_dry_run_uses_hook_for_go() {
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("go.mod"), "module x").unwrap();
+    fs::create_dir(dir.path().join("tools")).unwrap();
+    fs::write(dir.path().join("tools/uu-post-install"), "#!/bin/sh\n").unwrap();
+
+    uu().args(["install", "-n", "--default"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("go install ./..."))
+        .stderr(predicate::str::contains("./tools/uu-post-install"));
+}
+
+#[test]
+fn install_default_dry_run_cargo_keeps_builtin_defaulting() {
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"").unwrap();
+
+    uu().args(["install", "-n", "--default"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("cargo install --path ."))
+        .stderr(predicate::str::contains("would default"));
 }
 
 #[test]

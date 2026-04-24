@@ -1,0 +1,22 @@
+units:
+- id: '9'
+  title: Make uu install --default work across supported ecosystems
+  status: closed
+  priority: 2
+  labels:
+  - uu
+  - install
+  - default
+  updated_at: '2026-04-24T05:15:50.521168Z'
+  has_verify: true
+  verify: cargo fmt --check && cargo test -p univ-utils install
+  created_at: '2026-04-24T05:12:13.013947Z'
+  attempts: 0
+  paths:
+  - crates/uu/src/cmd/install.rs
+  - crates/uu/src/main.rs
+  - crates/uu/tests/cli.rs
+  - README.md
+  kind: epic
+  feature: false
+  has_decisions: false

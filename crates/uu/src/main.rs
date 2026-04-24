@@ -9,7 +9,8 @@ use clap::{Args, Parser, Subcommand};
 
 /// Zero-config project tools for common tasks across many ecosystems.
 ///
-/// Run `uu install` in a Rust project and it runs `cargo install --path .`.
+/// Run `uu install` in a Rust project and it runs `cargo install --path .`,
+/// or `cargo install --path crates/uu` for this repo's workspace root.
 /// Run `uu test` in a Node project and it runs `npm test`. No config needed.
 #[derive(Parser)]
 #[command(name = "uu", version, about)]
@@ -67,6 +68,10 @@ struct ProjectArgs {
     /// Show what would run without executing
     #[arg(short = 'n', long)]
     dry_run: bool,
+
+    /// Make installed commands become the default shell command when supported
+    #[arg(long = "default")]
+    make_default: bool,
 
     /// Extra arguments passed through to the underlying command (after --)
     #[arg(last = true)]
@@ -137,9 +142,8 @@ fn main() {
             .and_then(|()| cmd::dev::execute(a.dry_run, a.open, a.packages, vec![])),
         Commands::Doctor => cmd::doctor::execute(),
         Commands::Fmt(a) => chdir(&a.directory).and_then(|()| cmd::fmt::execute(a.dry_run, a.args)),
-        Commands::Install(a) => {
-            chdir(&a.directory).and_then(|()| cmd::install::execute(a.dry_run, a.args))
-        }
+        Commands::Install(a) => chdir(&a.directory)
+            .and_then(|()| cmd::install::execute(a.dry_run, a.make_default, a.args)),
         Commands::Lint(a) => {
             chdir(&a.directory).and_then(|()| cmd::lint::execute(a.dry_run, a.args))
         }
