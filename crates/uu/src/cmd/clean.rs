@@ -3,18 +3,85 @@
 use std::env;
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result};
-use project_detect::{KotlinBuild, ProjectKind};
+use project_detect::{detect, KotlinBuild, ProjectKind};
 
 use crate::runner::{self, style};
 
-pub(crate) fn execute(dry_run: bool) -> Result<()> {
+pub(crate) fn execute(dry_run: bool, all: bool) -> Result<()> {
+    if all {
+        return clean_all_projects(dry_run);
+    }
+
     let kind = runner::detect_project()?;
     let dir = env::current_dir().context("failed to read current directory")?;
+    clean_project(&dir, &kind, dry_run)
+}
 
+fn clean_all_projects(dry_run: bool) -> Result<()> {
+    let dir = env::current_dir().context("failed to read current directory")?;
+    let projects = child_projects(&dir)?;
+
+    if projects.is_empty() {
+        eprintln!(
+            "{} no projects found in {}",
+            style("33", "skip"),
+            dir.display()
+        );
+        return Ok(());
+    }
+
+    let mut cleaned = 0;
+    for (project_dir, kind) in projects {
+        eprintln!(
+            "\n{} {}",
+            style("36", "project"),
+            project_dir
+                .strip_prefix(&dir)
+                .unwrap_or(&project_dir)
+                .display()
+        );
+        env::set_current_dir(&project_dir).with_context(|| {
+            format!(
+                "cannot change to project directory `{}`",
+                project_dir.display()
+            )
+        })?;
+        clean_project(&project_dir, &kind, dry_run)?;
+        cleaned += 1;
+    }
+    env::set_current_dir(&dir)
+        .with_context(|| format!("cannot restore directory `{}`", dir.display()))?;
+
+    let noun = if cleaned == 1 { "project" } else { "projects" };
+    eprintln!("{} cleaned {cleaned} {noun}", style("32", "done ✓"));
+    Ok(())
+}
+
+fn child_projects(dir: &Path) -> Result<Vec<(PathBuf, ProjectKind)>> {
+    let mut projects = Vec::new();
+
+    for entry in fs::read_dir(dir).with_context(|| format!("failed to read {}", dir.display()))? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if !file_type.is_dir() {
+            continue;
+        }
+
+        let project_dir = entry.path();
+        if let Some(kind) = detect(&project_dir) {
+            projects.push((project_dir, kind));
+        }
+    }
+
+    projects.sort_by(|(a, _), (b, _)| a.cmp(b));
+    Ok(projects)
+}
+
+fn clean_project(dir: &Path, kind: &ProjectKind, dry_run: bool) -> Result<()> {
     eprintln!(
         "{} {} \x1b[2m({})\x1b[0m",
         style("36", "detected"),

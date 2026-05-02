@@ -106,6 +106,10 @@ struct CleanArgs {
     /// Show what would be removed without deleting
     #[arg(short = 'n', long)]
     dry_run: bool,
+
+    /// Clean all direct child projects in this directory
+    #[arg(long)]
+    all: bool,
 }
 
 /// Change to the given directory if provided.
@@ -138,7 +142,9 @@ fn main() {
             chdir(&a.directory).and_then(|()| cmd::check::execute(a.dry_run, a.args))
         }
         Commands::Ci(a) => chdir(&a.directory).and_then(|()| cmd::ci::execute(a.dry_run, a.args)),
-        Commands::Clean(a) => chdir(&a.directory).and_then(|()| cmd::clean::execute(a.dry_run)),
+        Commands::Clean(a) => {
+            chdir(&a.directory).and_then(|()| cmd::clean::execute(a.dry_run, a.all))
+        }
         Commands::Dev(a) => chdir(&a.directory)
             .and_then(|()| cmd::dev::execute(a.dry_run, a.open, a.packages, vec![])),
         Commands::Doctor => cmd::doctor::execute(),

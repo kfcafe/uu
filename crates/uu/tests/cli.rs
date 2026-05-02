@@ -390,7 +390,42 @@ fn clean_dry_run_nothing_to_clean() {
         .stderr(predicate::str::contains("nothing to clean"));
 }
 
-// -- Ports -------------------------------------------------------------------
+#[test]
+fn clean_all_dry_run_cleans_direct_child_projects() {
+    let dir = tempdir().unwrap();
+
+    let node = dir.path().join("node-app");
+    fs::create_dir(&node).unwrap();
+    fs::write(node.join("package.json"), "{}").unwrap();
+    fs::create_dir(node.join("node_modules")).unwrap();
+    fs::write(node.join("node_modules/fake.js"), "x").unwrap();
+
+    let rust = dir.path().join("rust-app");
+    fs::create_dir(&rust).unwrap();
+    fs::write(rust.join("Cargo.toml"), "[package]\nname = \"x\"").unwrap();
+
+    fs::create_dir(dir.path().join("not-a-project")).unwrap();
+
+    uu().args(["clean", "--all", "-n"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("node-app"))
+        .stderr(predicate::str::contains("rust-app"))
+        .stderr(predicate::str::contains("node_modules/"))
+        .stderr(predicate::str::contains("cargo clean"));
+}
+
+#[test]
+fn clean_all_dry_run_skips_when_no_child_projects() {
+    let dir = tempdir().unwrap();
+
+    uu().args(["clean", "--all", "-n"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("no projects found"));
+}
 
 #[test]
 fn ports_runs_without_error() {
