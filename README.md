@@ -131,10 +131,10 @@ Run specific packages with `uu dev api web`. Add `-o` to open the first localhos
 | 29 | `MODULE.bazel` / `WORKSPACE` | Bazel | `bazel build //...` | `bazel build //...` | `bazel test //...` | `bazel build //...` | `bazel test //...` | `bazel run //:main` | `bazel run //:main` | `buildifier .` | `bazel test //...` |
 | 30 | `meson.build` | Meson | `meson setup builddir` + compile | `meson compile -C builddir` | `meson test -C builddir` | setup + compile + install | `meson test -C builddir` | — | — | — | — |
 | 31 | `CMakeLists.txt` | CMake | `cmake -B build` + `--build` | `cmake -B build` + `--build` | `ctest --test-dir build` | `cmake --install build` | `ctest --test-dir build` | — | — | — | — |
-| 32 | `Makefile` | Make | `make` | `make` | `make test` | `make && make install` | `make test` | `make run` | `make run` | — | — |
+| 32 | `Makefile` | Make | `make` | `make` | `make test` | child project installs if present, otherwise `make && make install` | `make test` | `make run` | `make run` | — | — |
 
 > [!NOTE]
-> Python auto-detects `uv` and uses it when available. Node.js detects npm/yarn/pnpm/bun from lockfiles. Kotlin is detected ahead of generic Gradle/Maven when `uu` sees Kotlin source files. `run`/`dev` stay intentionally unsupported for Xcode and R because they need project-specific entrypoint or scheme selection.
+> Python auto-detects `uv` and uses it when available. Node.js detects npm/yarn/pnpm/bun from lockfiles. Kotlin is detected ahead of generic Gradle/Maven when `uu` sees Kotlin source files. `uu install` treats a generic Makefile root with nested language projects as a monorepo and installs the child projects instead of running `make install`. `run`/`dev` stay intentionally unsupported for Xcode and R because they need project-specific entrypoint or scheme selection.
 
 ## How It Works
 

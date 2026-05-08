@@ -294,6 +294,49 @@ fn install_default_dry_run_uses_python_project_scripts() {
 }
 
 #[test]
+fn install_dry_run_make_monorepo_installs_child_projects() {
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("Makefile"), "build:\n\t@echo build\n").unwrap();
+
+    let sdk = dir.path().join("libs/sdk");
+    fs::create_dir_all(&sdk).unwrap();
+    fs::write(sdk.join("pyproject.toml"), "[project]\nname = \"sdk\"\n").unwrap();
+
+    let cli = dir.path().join("libs/cli");
+    fs::create_dir_all(&cli).unwrap();
+    fs::write(
+        cli.join("pyproject.toml"),
+        "[project]\nname = \"cli\"\n[project.scripts]\ncli = \"cli:main\"\n",
+    )
+    .unwrap();
+
+    uu().args(["install", "-n"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("project").and(predicate::str::contains("libs/cli")))
+        .stderr(predicate::str::contains("uv tool install --force ."))
+        .stderr(predicate::str::contains("project").and(predicate::str::contains("libs/sdk")))
+        .stderr(predicate::str::contains("uv pip install ."))
+        .stderr(predicate::str::contains("make install").not());
+}
+
+#[test]
+fn install_dry_run_make_without_child_projects_uses_make_install() {
+    let dir = tempdir().unwrap();
+    fs::write(dir.path().join("Makefile"), "install:\n\t@echo install\n").unwrap();
+
+    uu().args(["install", "-n"])
+        .current_dir(dir.path())
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("would run").and(predicate::str::contains("make")))
+        .stderr(
+            predicate::str::contains("would run").and(predicate::str::contains("make install")),
+        );
+}
+
+#[test]
 fn install_no_project_fails() {
     let dir = tempdir().unwrap();
 

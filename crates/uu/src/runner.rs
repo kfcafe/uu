@@ -2,6 +2,7 @@
 
 use std::env;
 use std::fmt;
+use std::path::{Path, PathBuf};
 use std::process::{self, Command, Stdio};
 
 use anyhow::{Context, Result};
@@ -55,11 +56,31 @@ pub(crate) fn step(program: &str, args: &[&str]) -> Step {
     }
 }
 
+/// A detected project and the directory where its marker file was found.
+pub(crate) struct DetectedProject {
+    pub kind: ProjectKind,
+    pub dir: PathBuf,
+}
+
 /// Detect the project kind, walking up from the current directory.
 ///
 /// If the project file is found in a parent directory, changes the working
 /// directory to that parent so commands run in the right place.
 pub(crate) fn detect_project() -> Result<ProjectKind> {
+    let project = detect_project_with_dir()?;
+    if project.dir != env::current_dir().context("failed to read current directory")? {
+        env::set_current_dir(&project.dir).with_context(|| {
+            format!(
+                "cannot change to detected project root `{}`",
+                project.dir.display()
+            )
+        })?;
+    }
+    Ok(project.kind)
+}
+
+/// Detect the project kind and the directory where it was found.
+pub(crate) fn detect_project_with_dir() -> Result<DetectedProject> {
     let dir = env::current_dir().context("failed to read current directory")?;
     let (kind, project_dir) = detect_walk(&dir).ok_or_else(|| {
         anyhow::anyhow!(
@@ -68,16 +89,22 @@ pub(crate) fn detect_project() -> Result<ProjectKind> {
             supported_table()
         )
     })?;
-    // If the project root is an ancestor, cd into it so cargo/go/etc. work.
-    if project_dir != dir {
-        env::set_current_dir(&project_dir).with_context(|| {
-            format!(
-                "cannot change to detected project root `{}`",
-                project_dir.display()
-            )
-        })?;
-    }
-    Ok(kind)
+
+    Ok(DetectedProject {
+        kind,
+        dir: project_dir,
+    })
+}
+
+/// Change to `dir` and run `f`, then restore the original working directory.
+pub(crate) fn with_current_dir<T>(dir: &Path, f: impl FnOnce() -> Result<T>) -> Result<T> {
+    let original = env::current_dir().context("failed to read current directory")?;
+    env::set_current_dir(dir)
+        .with_context(|| format!("cannot change to directory `{}`", dir.display()))?;
+    let result = f();
+    env::set_current_dir(&original)
+        .with_context(|| format!("cannot restore working directory `{}`", original.display()))?;
+    result
 }
 
 /// Append extra CLI arguments to the last step in a sequence.

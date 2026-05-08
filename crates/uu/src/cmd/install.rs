@@ -1,14 +1,21 @@
 //! `uu install` — detect project type and run the install command.
 
 use std::collections::BTreeSet;
+use std::env;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use project_detect::{KotlinBuild, NodePM, ProjectKind};
+use project_detect::{detect, KotlinBuild, NodePM, ProjectKind};
 
 use crate::runner::{self, step, Step};
+
+#[derive(Debug)]
+struct InstallTarget {
+    kind: ProjectKind,
+    dir: PathBuf,
+}
 
 #[derive(Debug)]
 struct CargoInstallTarget {
@@ -196,6 +203,47 @@ fn cargo_install_target_in(dir: &Path) -> Result<CargoInstallTarget> {
 fn cargo_install_target() -> Result<CargoInstallTarget> {
     let dir = std::env::current_dir().context("failed to read current directory")?;
     cargo_install_target_in(&dir)
+}
+
+fn collect_install_targets(root: &Path, targets: &mut Vec<InstallTarget>) -> Result<()> {
+    for entry in fs::read_dir(root).with_context(|| format!("failed to read {}", root.display()))? {
+        let entry = entry.with_context(|| format!("failed to read entry in {}", root.display()))?;
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        if path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| name.starts_with('.') || name == "target" || name == "node_modules")
+        {
+            continue;
+        }
+        match detect(&path) {
+            Some(kind) if !matches!(kind, ProjectKind::Make) => {
+                targets.push(InstallTarget { kind, dir: path });
+            }
+            _ => collect_install_targets(&path, targets)?,
+        }
+    }
+    Ok(())
+}
+
+fn make_install_targets(root: &Path) -> Result<Vec<InstallTarget>> {
+    let mut targets = Vec::new();
+    collect_install_targets(root, &mut targets)?;
+    targets.sort_by(|a, b| a.dir.cmp(&b.dir));
+    Ok(targets)
+}
+
+fn install_targets_for(kind: ProjectKind, dir: PathBuf) -> Result<Vec<InstallTarget>> {
+    if matches!(kind, ProjectKind::Make) {
+        let targets = make_install_targets(&dir)?;
+        if !targets.is_empty() {
+            return Ok(targets);
+        }
+    }
+    Ok(vec![InstallTarget { kind, dir }])
 }
 
 /// Generate install steps for a detected project.
@@ -675,26 +723,39 @@ fn apply_default(kind: &ProjectKind, dry_run: bool) -> Result<()> {
 }
 
 pub(crate) fn execute(dry_run: bool, make_default: bool, extra_args: Vec<String>) -> Result<()> {
-    let kind = runner::detect_project()?;
-    let mut s = steps(&kind)?;
-    runner::append_args(&mut s, &extra_args);
-    // Node projects with a "bin" field should also link the binary onto PATH.
-    if let ProjectKind::Node { manager } = &kind {
-        let dir = std::env::current_dir()?;
-        if project_detect::node_has_bin(&dir) {
-            let cmd = match manager {
-                NodePM::Bun => "bun",
-                NodePM::Pnpm => "pnpm",
-                NodePM::Yarn => "yarn",
-                NodePM::Npm => "npm",
-            };
-            s.push(step(cmd, &["link"]));
-        }
-    }
+    let project = runner::detect_project_with_dir()?;
+    let targets = install_targets_for(project.kind, project.dir)?;
+    let original = env::current_dir().context("failed to read current directory")?;
 
-    runner::run_steps(&kind, &s, dry_run)?;
-    if make_default {
-        apply_default(&kind, dry_run)?;
+    for target in targets {
+        runner::with_current_dir(&target.dir, || {
+            let mut s = steps(&target.kind)?;
+            runner::append_args(&mut s, &extra_args);
+            // Node projects with a "bin" field should also link the binary onto PATH.
+            if let ProjectKind::Node { manager } = &target.kind {
+                if project_detect::node_has_bin(&target.dir) {
+                    let cmd = match manager {
+                        NodePM::Bun => "bun",
+                        NodePM::Pnpm => "pnpm",
+                        NodePM::Yarn => "yarn",
+                        NodePM::Npm => "npm",
+                    };
+                    s.push(step(cmd, &["link"]));
+                }
+            }
+
+            let display_dir = target
+                .dir
+                .strip_prefix(&original)
+                .unwrap_or(&target.dir)
+                .display();
+            eprintln!("{} {}", runner::style("36", "project"), display_dir);
+            runner::run_steps(&target.kind, &s, dry_run)?;
+            if make_default {
+                apply_default(&target.kind, dry_run)?;
+            }
+            Ok(())
+        })?;
     }
     Ok(())
 }
